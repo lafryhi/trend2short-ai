@@ -2,6 +2,7 @@
   "routes": [
     { "src": "^/api/generate$", "dest": "/api/generate.js" },
     { "src": "^/$", "dest": "/index.html" },
+    { "src": "^/blog/?$", "dest": "/blog/index.html" },
     { "src": "^/examples/?$", "dest": "/examples.html" },
     { "src": "^/ai-generator/?$", "dest": "/ai-generator.html" },
     { "src": "^/setup/?$", "dest": "/setup.html" },
