@@ -44,6 +44,7 @@ const examplesSection = document.getElementById("examples");
 const STORAGE_KEY = "trend2short-history";
 const TOTAL_STORAGE_KEY = "trend2short-total-generations";
 const SEEDED_KEY = "trend2short-seeded-v1";
+const PENDING_TREND_KEY = "trend2short-pending-trend";
 const HISTORY_LIMIT = 10;
 
 let currentContent = null;
@@ -790,6 +791,13 @@ function initializeView() {
   renderSavedHistory();
   refreshDashboard();
   activateTab("generator");
+
+  const pendingTrend = window.localStorage.getItem(PENDING_TREND_KEY);
+  if (pendingTrend) {
+    trendTopicInput.value = pendingTrend;
+    window.localStorage.removeItem(PENDING_TREND_KEY);
+    activateTab("generator");
+  }
 }
 
 trendForm.addEventListener("submit", (event) => {
@@ -809,7 +817,7 @@ startGeneratingBtn.addEventListener("click", () => {
 });
 
 viewExamplesBtn.addEventListener("click", () => {
-  activateTab("generator", { scrollTarget: examplesSection });
+  window.location.href = "examples.html";
 });
 
 useTrendButtons.forEach((button) => {
