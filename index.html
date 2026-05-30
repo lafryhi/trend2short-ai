@@ -21,7 +21,9 @@
   <meta name="twitter:image" content="https://trend2short-ai.vercel.app/og-image.svg">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="stylesheet" href="style.css">
+  <script src="js/services/ai.js" defer></script>
   <script src="script.js" defer></script>
+  <script src="js/ai-generator-app.js" defer></script>
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -42,12 +44,16 @@
 <body>
   <div class="page-shell">
     <header class="topbar">
-      <a class="brand" href="#hero">Trend2Short AI</a>
+      <div class="brand-cluster">
+        <a class="brand" href="#hero">Trend2Short AI</a>
+        <span class="site-badge">MVP Version</span>
+      </div>
       <nav class="topbar-nav" aria-label="Primary navigation">
         <a href="examples.html">Examples</a>
+        <a href="ai-generator.html">AI Generator</a>
+        <a href="roadmap.html">Roadmap</a>
         <a href="#dashboard">Dashboard</a>
         <a href="#workspaceTabs">Workspace</a>
-        <a href="#footer">Footer</a>
       </nav>
     </header>
 
@@ -148,13 +154,14 @@
       <section class="section workspace-section" id="workspaceTabs">
         <div class="section-heading workspace-heading">
           <span class="eyebrow">Workspace</span>
-          <h2>Switch between creation, saved history, and pricing</h2>
-          <p>Tabs keep the experience focused without leaving the page.</p>
+          <h2>Switch between demo generation, AI generation, saved history, and pricing</h2>
+          <p>Tabs keep the experience focused without leaving the page while the AI layer evolves behind a stable MVP.</p>
         </div>
 
         <div class="tabs-shell card">
           <div class="tab-list" role="tablist" aria-label="Trend2Short sections">
             <button class="tab-btn is-active" id="tabGenerator" type="button" role="tab" aria-selected="true" aria-controls="generatorPanel" data-tab-target="generator">Generator</button>
+            <button class="tab-btn" id="tabAiGenerator" type="button" role="tab" aria-selected="false" aria-controls="aiGeneratorPanel" data-tab-target="ai-generator">AI Generator</button>
             <button class="tab-btn" id="tabHistory" type="button" role="tab" aria-selected="false" aria-controls="historyPanel" data-tab-target="history">History</button>
             <button class="tab-btn" id="tabPricing" type="button" role="tab" aria-selected="false" aria-controls="pricingPanel" data-tab-target="pricing">Pricing</button>
           </div>
@@ -429,6 +436,143 @@
               </section>
             </div>
 
+            <div class="tab-panel" id="aiGeneratorPanel" role="tabpanel" aria-labelledby="tabAiGenerator" data-tab-panel="ai-generator" hidden>
+              <section class="workspace-block" id="aiGenerator">
+                <div class="section-heading panel-heading ai-panel-heading">
+                  <div>
+                    <span class="eyebrow">AI Generator</span>
+                    <h2>Generate with an AI-ready architecture and a built-in demo fallback</h2>
+                    <p>The AI service layer is prepared for future providers. If no API key is configured, Trend2Short AI runs in demo mode automatically.</p>
+                  </div>
+                  <a class="btn btn-secondary btn-compact" href="ai-generator.html">Open Full AI Page</a>
+                </div>
+
+                <section class="ai-generator-shell" data-ai-generator-root>
+                  <div class="ai-toolbar">
+                    <span class="site-badge">MVP Version</span>
+                    <div class="ai-usage-card">
+                      <span>AI Generations Today</span>
+                      <strong id="aiUsageCount">0</strong>
+                    </div>
+                  </div>
+
+                  <div class="generator-grid">
+                    <form class="generator-form card" id="aiTrendForm" novalidate>
+                      <div class="field-group field-full">
+                        <label for="aiTrendTopic">Trend Topic</label>
+                        <input
+                          id="aiTrendTopic"
+                          name="aiTrendTopic"
+                          type="text"
+                          placeholder="Example: AI tools for teachers"
+                          value="AI tools for teachers"
+                          required
+                        >
+                      </div>
+
+                      <div class="field-group">
+                        <label for="aiPlatform">Platform</label>
+                        <select id="aiPlatform" name="aiPlatform">
+                          <option value="TikTok">TikTok</option>
+                          <option value="YouTube Shorts">YouTube Shorts</option>
+                          <option value="Instagram Reels">Instagram Reels</option>
+                        </select>
+                      </div>
+
+                      <div class="field-group">
+                        <label for="aiLanguage">Language</label>
+                        <select id="aiLanguage" name="aiLanguage">
+                          <option value="English">English</option>
+                          <option value="Arabic">Arabic</option>
+                          <option value="French">French</option>
+                        </select>
+                      </div>
+
+                      <div class="field-group">
+                        <label for="aiStyle">Style</label>
+                        <select id="aiStyle" name="aiStyle">
+                          <option value="Educational">Educational</option>
+                          <option value="Viral">Viral</option>
+                          <option value="Storytelling">Storytelling</option>
+                          <option value="Professional">Professional</option>
+                        </select>
+                      </div>
+
+                      <div class="field-group field-full">
+                        <button class="btn btn-primary btn-wide" id="aiGenerateBtn" type="submit">Generate With AI</button>
+                      </div>
+                    </form>
+
+                    <section class="results card ai-results" aria-live="polite">
+                      <div class="results-header">
+                        <div>
+                          <span class="eyebrow">AI Output</span>
+                          <h3 id="aiResultTitle">AI tools for teachers</h3>
+                        </div>
+                        <div class="results-actions">
+                          <span class="results-tag" id="aiResultMeta">TikTok | English | Educational</span>
+                        </div>
+                      </div>
+
+                      <div class="ai-status-stack">
+                        <div class="ai-status ai-status-info" id="aiModeNotice" hidden></div>
+                        <div class="ai-status ai-status-loading" id="aiLoadingState" hidden>
+                          <span class="spinner" aria-hidden="true"></span>
+                          <span>Generating content...</span>
+                        </div>
+                        <div class="ai-status ai-status-error" id="aiErrorState" hidden></div>
+                      </div>
+
+                      <div class="result-list" id="aiResultList">
+                        <article class="result-item">
+                          <div class="result-item-head">
+                            <h4>Hook</h4>
+                            <button class="ai-copy-btn" type="button" data-copy-target="aiHook">Copy</button>
+                          </div>
+                          <p id="aiHook"></p>
+                        </article>
+                        <article class="result-item">
+                          <div class="result-item-head">
+                            <h4>Video Idea</h4>
+                            <button class="ai-copy-btn" type="button" data-copy-target="aiVideoIdea">Copy</button>
+                          </div>
+                          <p id="aiVideoIdea"></p>
+                        </article>
+                        <article class="result-item">
+                          <div class="result-item-head">
+                            <h4>Short Script</h4>
+                            <button class="ai-copy-btn" type="button" data-copy-target="aiShortScript">Copy</button>
+                          </div>
+                          <p id="aiShortScript"></p>
+                        </article>
+                        <article class="result-item">
+                          <div class="result-item-head">
+                            <h4>Caption</h4>
+                            <button class="ai-copy-btn" type="button" data-copy-target="aiCaption">Copy</button>
+                          </div>
+                          <p id="aiCaption"></p>
+                        </article>
+                        <article class="result-item">
+                          <div class="result-item-head">
+                            <h4>Hashtags</h4>
+                            <button class="ai-copy-btn" type="button" data-copy-target="aiHashtags">Copy</button>
+                          </div>
+                          <p id="aiHashtags"></p>
+                        </article>
+                        <article class="result-item">
+                          <div class="result-item-head">
+                            <h4>CTA</h4>
+                            <button class="ai-copy-btn" type="button" data-copy-target="aiCta">Copy</button>
+                          </div>
+                          <p id="aiCta"></p>
+                        </article>
+                      </div>
+                    </section>
+                  </div>
+                </section>
+              </section>
+            </div>
+
             <div class="tab-panel" id="historyPanel" role="tabpanel" aria-labelledby="tabHistory" data-tab-panel="history" hidden>
               <section class="workspace-block" id="saved">
                 <div class="section-heading panel-heading saved-heading">
@@ -493,11 +637,44 @@
           </div>
         </div>
       </section>
+
+      <section class="section">
+        <div class="section-heading">
+          <span class="eyebrow">Future AI Features</span>
+          <h2>The current release is an MVP, and the full AI layer is next</h2>
+          <p>The product now includes an AI-ready service architecture while preserving the current local demo generator as a reliable backup.</p>
+        </div>
+
+        <div class="card-grid features-grid future-features-grid">
+          <article class="card feature-card">
+            <h3>Provider Switching</h3>
+            <p>The new AI service is structured so OpenAI, Gemini, Claude, or OpenRouter can be connected by updating one service layer.</p>
+          </article>
+          <article class="card feature-card">
+            <h3>Safer MVP Rollout</h3>
+            <p>If no API key exists, the product falls back to the local generator and continues working without breaking the creator workflow.</p>
+          </article>
+          <article class="card feature-card">
+            <h3>Usage Tracking</h3>
+            <p>Local usage tracking already measures daily AI generations and prepares the interface for future plan limits and billing.</p>
+          </article>
+          <article class="card feature-card">
+            <h3>Roadmap Visibility</h3>
+            <p>Public roadmap content makes it clear which collaboration, export, and analytics features are planned next.</p>
+          </article>
+          <article class="card feature-card">
+            <h3>Launch Path</h3>
+            <p>The current architecture stays static and browser-only today while remaining easy to evolve into a real SaaS product later.</p>
+          </article>
+        </div>
+      </section>
     </main>
 
     <footer class="footer" id="footer">
       <nav class="footer-nav" aria-label="Footer links">
         <a href="examples.html">Examples</a>
+        <a href="ai-generator.html">AI Generator</a>
+        <a href="roadmap.html">Roadmap</a>
         <a href="about.html">About</a>
         <a href="contact.html">Contact</a>
         <a href="privacy-policy.html">Privacy Policy</a>
