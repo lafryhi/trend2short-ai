@@ -222,7 +222,7 @@
     renderContent(service.createPreviewContent(getInput()));
     const status = await service.getStatus();
     await updateStatus(status);
-    showModeNotice(status.hasApiKey ? "" : "Running in Demo Mode");
+    showModeNotice(status.mode === "Live" ? "Gemini Live Mode" : "Running in Demo Mode");
     showToast("Demo data reset.");
   }
 
@@ -238,7 +238,7 @@
     }
 
     renderContent(service.createPreviewContent(getInput()));
-    showModeNotice(status.hasApiKey ? "" : "Running in Demo Mode");
+    showModeNotice(status.mode === "Live" ? "Gemini Live Mode" : "Running in Demo Mode");
   }
 
   form.addEventListener("submit", handleSubmit);

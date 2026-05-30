@@ -51,32 +51,35 @@
         </article>
 
         <article class="card roadmap-card">
-          <h2>2. Place The Key Locally</h2>
+          <h2>2. Place The Key In Vercel</h2>
           <p>
-            Open <strong>config.js</strong> and keep the provider set to Gemini:
+            Do <strong>not</strong> put the Gemini key in <strong>config.js</strong>.
           </p>
-          <pre><code>window.APP_CONFIG = {
-  API_PROVIDER: "gemini",
-  API_KEY: "your-key-here"
-};</code></pre>
           <p>
-            Do not publish the real key. Leave <strong>config.example.js</strong> empty as the template file.
+            The key belongs in Vercel only:
+          </p>
+          <pre><code>Project Settings
+Environment Variables
+GEMINI_API_KEY</code></pre>
+          <p>
+            After adding the variable, redeploy the project. Keep <strong>config.js</strong> for non-secret frontend settings only.
           </p>
         </article>
 
         <article class="card roadmap-card">
           <h3>Demo Mode</h3>
           <p>
-            If <strong>API_KEY</strong> is empty, the AI Generator shows <strong>Running in Demo Mode</strong>
-            and uses the local browser-based generator as a fallback.
+            If <strong>GEMINI_API_KEY</strong> is missing in Vercel, the serverless function reports Demo Mode and
+            the frontend uses the local browser-based generator as a fallback.
           </p>
         </article>
 
         <article class="card roadmap-card">
           <h3>Live Mode</h3>
           <p>
-            If <strong>API_KEY</strong> is present, Trend2Short AI sends requests directly from the browser to
-            <strong>Gemini 2.5 Flash</strong> and expects a JSON-only response for hooks, ideas, scripts, captions,
+            If <strong>GEMINI_API_KEY</strong> is present in Vercel, Trend2Short AI sends requests to
+            <strong>/api/generate</strong>, and the serverless function calls <strong>Gemini 2.5 Flash</strong>
+            and expects a JSON-only response for hooks, ideas, scripts, captions,
             hashtags, and CTAs.
           </p>
         </article>

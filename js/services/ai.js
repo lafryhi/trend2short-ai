@@ -2,10 +2,9 @@
   const USAGE_STORAGE_KEY = "trend2short-ai-usage";
   const DEFAULT_PROVIDER = "gemini";
   const DAILY_LIMIT = 10;
-  const GEMINI_MODEL = "gemini-2.5-flash";
   const DEFAULT_SETTINGS = {
     API_PROVIDER: DEFAULT_PROVIDER,
-    API_KEY: ""
+    USE_LOCAL_API: false
   };
 
   const debugState = {
@@ -15,6 +14,12 @@
   };
 
   let configLoadPromise = null;
+  let cachedStatus = {
+    provider: DEFAULT_PROVIDER,
+    providerLabel: "Gemini",
+    mode: "Demo",
+    apiStatus: "Missing Key"
+  };
 
   const styleProfiles = {
     Educational: {
@@ -216,10 +221,6 @@
       return window.APP_CONFIG;
     }
 
-    if (window.TREND2SHORT_CONFIG && typeof window.TREND2SHORT_CONFIG === "object") {
-      return window.TREND2SHORT_CONFIG;
-    }
-
     return null;
   }
 
@@ -255,24 +256,20 @@
 
   async function getSettings() {
     const loadedConfig = await loadOptionalConfig();
-    const provider = String(loadedConfig.API_PROVIDER || DEFAULT_PROVIDER).toLowerCase();
     return {
-      API_PROVIDER: provider,
-      API_KEY: String(loadedConfig.API_KEY || "").trim()
+      API_PROVIDER: String(loadedConfig.API_PROVIDER || DEFAULT_PROVIDER).toLowerCase(),
+      USE_LOCAL_API: Boolean(loadedConfig.USE_LOCAL_API)
     };
   }
 
   async function getStatus() {
-    const settings = await getSettings();
-    const hasApiKey = Boolean(settings.API_KEY);
-    const provider = settings.API_PROVIDER || DEFAULT_PROVIDER;
+    return { ...cachedStatus };
+  }
 
-    return {
-      provider,
-      providerLabel: provider === "gemini" ? "Gemini" : provider.charAt(0).toUpperCase() + provider.slice(1),
-      mode: hasApiKey ? "Live" : "Demo",
-      apiStatus: hasApiKey ? "Ready" : "Missing Key",
-      hasApiKey
+  function setStatus(nextStatus = {}) {
+    cachedStatus = {
+      ...cachedStatus,
+      ...nextStatus
     };
   }
 
@@ -379,166 +376,6 @@
     return normalized;
   }
 
-  function extractJsonCandidate(rawText) {
-    const trimmed = String(rawText || "").trim();
-
-    if (!trimmed) {
-      throw new Trend2ShortAIError("INVALID_RESPONSE", "Gemini returned an empty response.");
-    }
-
-    const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-    if (fencedMatch) {
-      return fencedMatch[1].trim();
-    }
-
-    const firstBrace = trimmed.indexOf("{");
-    const lastBrace = trimmed.lastIndexOf("}");
-
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      return trimmed.slice(firstBrace, lastBrace + 1);
-    }
-
-    return trimmed;
-  }
-
-  function parseStrictJsonPayload(rawText) {
-    const jsonText = extractJsonCandidate(rawText);
-    const parsed = safeJsonParse(jsonText, null);
-
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      throw new Trend2ShortAIError("INVALID_RESPONSE", "Gemini returned invalid JSON. Please try again.");
-    }
-
-    return parsed;
-  }
-
-  function buildGeminiPrompt(input) {
-    return [
-      "Generate short-form video marketing content for Trend2Short AI.",
-      `Trend Topic: ${input.topic}`,
-      `Platform: ${input.platform}`,
-      `Language: ${input.language}`,
-      `Style: ${input.style}`,
-      "Return JSON only with these keys exactly:",
-      "{\"hook\":\"\",\"videoIdea\":\"\",\"shortScript\":\"\",\"caption\":\"\",\"hashtags\":\"\",\"cta\":\"\"}",
-      "Requirements:",
-      "- Match the requested language exactly.",
-      "- Keep hook concise and strong.",
-      "- Keep videoIdea to one clear sentence.",
-      "- Keep shortScript compact and ready to narrate.",
-      "- Keep hashtags as a single string with space-separated hashtags.",
-      "- Do not include markdown, code fences, or explanations."
-    ].join("\n");
-  }
-
-  function buildGeminiBody(input) {
-    return {
-      systemInstruction: {
-        parts: [
-          {
-            text: "You are Trend2Short AI. Return valid JSON only. Do not wrap the JSON in markdown."
-          }
-        ]
-      },
-      contents: [
-        {
-          role: "user",
-          parts: [
-            {
-              text: buildGeminiPrompt(input)
-            }
-          ]
-        }
-      ],
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: {
-            hook: { type: "STRING" },
-            videoIdea: { type: "STRING" },
-            shortScript: { type: "STRING" },
-            caption: { type: "STRING" },
-            hashtags: { type: "STRING" },
-            cta: { type: "STRING" }
-          },
-          required: ["hook", "videoIdea", "shortScript", "caption", "hashtags", "cta"]
-        }
-      }
-    };
-  }
-
-  async function parseGeminiHttpError(response) {
-    const rawText = await response.text();
-    const parsed = safeJsonParse(rawText, null);
-    const apiMessage = parsed?.error?.message;
-    return apiMessage || `Gemini request failed with status ${response.status}.`;
-  }
-
-  function extractGeminiText(payload) {
-    const firstCandidate = payload?.candidates?.[0];
-    const parts = firstCandidate?.content?.parts;
-    const text = Array.isArray(parts)
-      ? parts.map((part) => part.text || "").join("").trim()
-      : "";
-
-    if (text) {
-      return text;
-    }
-
-    const blockReason = payload?.promptFeedback?.blockReason;
-    if (blockReason) {
-      throw new Trend2ShortAIError("API_ERROR", `Gemini blocked the request: ${blockReason}.`);
-    }
-
-    throw new Trend2ShortAIError("INVALID_RESPONSE", "Gemini returned no usable text.");
-  }
-
-  async function generateWithGemini(input, apiKey) {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-    const response = await window.fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey
-      },
-      body: JSON.stringify(buildGeminiBody(input))
-    });
-
-    if (!response.ok) {
-      throw new Trend2ShortAIError("API_ERROR", await parseGeminiHttpError(response));
-    }
-
-    const payload = await response.json();
-    const parsed = parseStrictJsonPayload(extractGeminiText(payload));
-
-    return {
-      title: input.topic,
-      hook: parsed.hook,
-      videoIdea: parsed.videoIdea,
-      shortScript: parsed.shortScript,
-      caption: parsed.caption,
-      hashtags: parsed.hashtags,
-      cta: parsed.cta
-    };
-  }
-
-  async function generateWithFutureProvider(provider) {
-    throw new Trend2ShortAIError("API_ERROR", `${provider} integration is not enabled in this MVP build yet.`);
-  }
-
-  async function callProvider(provider, input, apiKey) {
-    if (provider === "gemini") {
-      return generateWithGemini(input, apiKey);
-    }
-
-    if (provider === "openai" || provider === "claude" || provider === "openrouter") {
-      return generateWithFutureProvider(provider);
-    }
-
-    throw new Trend2ShortAIError("API_ERROR", "Unsupported API provider configuration.");
-  }
-
   function consumeDebugState() {
     const nextErrorCode = debugState.nextErrorCode;
     const nextInvalidResponse = debugState.nextInvalidResponse;
@@ -558,6 +395,51 @@
     if (getTodayUsage() >= DAILY_LIMIT) {
       throw new Trend2ShortAIError("RATE_LIMIT", "Daily AI limit reached.");
     }
+  }
+
+  function shouldUseApiRoute(settings) {
+    const hostname = window.location.hostname;
+    const isLocalStaticHost = hostname === "127.0.0.1" || hostname === "localhost";
+    return !isLocalStaticHost || settings.USE_LOCAL_API;
+  }
+
+  async function callApiRoute(input, settings) {
+    if (!shouldUseApiRoute(settings)) {
+      throw new Trend2ShortAIError("NETWORK_ERROR", "Local API route disabled.");
+    }
+
+    const response = await window.fetch("/api/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        trend: input.topic,
+        platform: input.platform,
+        language: input.language,
+        style: input.style
+      })
+    });
+
+    const payload = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Trend2ShortAIError("NETWORK_ERROR", "API route unavailable.");
+      }
+
+      const message = payload?.message || `Request failed with status ${response.status}.`;
+      const codeMap = {
+        INVALID_INPUT: "API_ERROR",
+        MISSING_API_KEY: "API_ERROR",
+        GEMINI_API_ERROR: "API_ERROR",
+        INVALID_GEMINI_JSON_RESPONSE: "INVALID_RESPONSE",
+        METHOD_NOT_ALLOWED: "API_ERROR"
+      };
+      throw new Trend2ShortAIError(codeMap[payload?.code] || "API_ERROR", message);
+    }
+
+    return payload;
   }
 
   async function generate(input) {
@@ -591,26 +473,38 @@
     }
 
     const settings = await getSettings();
-    const hasApiKey = Boolean(settings.API_KEY);
-
-    let content;
-    let mode = "Live";
-    let message = "";
+    let content = null;
+    let mode = "Demo";
+    let message = "Running in Demo Mode";
+    let apiStatus = "Missing Key";
 
     try {
-      if (!hasApiKey) {
-        mode = "Demo";
-        message = "Running in Demo Mode";
+      const apiPayload = await callApiRoute(normalizedInput, settings);
+
+      if (apiPayload?.demoMode) {
         content = createDemoContent(normalizedInput);
+        mode = "Demo";
+        message = apiPayload.message || "Running in Demo Mode";
+        apiStatus = apiPayload.apiStatus || "Missing Key";
       } else {
-        content = await callProvider(settings.API_PROVIDER, normalizedInput, settings.API_KEY);
+        content = normalizeAIResponse(apiPayload?.content, normalizedInput);
+        mode = apiPayload?.mode || "Live";
+        message = apiPayload?.message || "Gemini Live Mode";
+        apiStatus = apiPayload?.apiStatus || "Ready";
       }
     } catch (error) {
-      if (error instanceof Trend2ShortAIError) {
+      if (error instanceof Trend2ShortAIError && error.code === "INVALID_RESPONSE") {
         throw error;
       }
 
-      throw new Trend2ShortAIError("NETWORK_ERROR", error.message || "Unknown network failure.");
+      if (error instanceof Trend2ShortAIError && error.code === "API_ERROR") {
+        throw error;
+      }
+
+      content = createDemoContent(normalizedInput);
+      mode = "Demo";
+      message = "Running in Demo Mode";
+      apiStatus = "Missing Key";
     }
 
     if (nextInvalidResponse) {
@@ -620,11 +514,18 @@
     const normalizedContent = normalizeAIResponse(content, normalizedInput);
     const usageCount = incrementTodayUsage();
 
+    setStatus({
+      provider: settings.API_PROVIDER || DEFAULT_PROVIDER,
+      providerLabel: "Gemini",
+      mode,
+      apiStatus
+    });
+
     return {
       mode,
       provider: settings.API_PROVIDER || DEFAULT_PROVIDER,
-      providerLabel: settings.API_PROVIDER === "gemini" ? "Gemini" : settings.API_PROVIDER,
-      apiStatus: hasApiKey ? "Ready" : "Missing Key",
+      providerLabel: "Gemini",
+      apiStatus,
       message,
       usageCount,
       content: normalizedContent
