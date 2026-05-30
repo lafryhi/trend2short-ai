@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trend2Short AI</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="#hero">Trend2Short AI</a>
+      <nav class="topbar-nav" aria-label="Primary navigation">
+        <a href="#dashboard">Dashboard</a>
+        <a href="#workspaceTabs">Workspace</a>
+        <a href="#footer">Footer</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero section" id="hero">
+        <div class="hero-copy">
+          <span class="eyebrow">MVP Content Workflow</span>
+          <h1>Turn Trends Into Short Videos Faster</h1>
+          <p class="hero-text">
+            Trend2Short AI helps creators transform trending topics into short video ideas,
+            hooks, scripts, captions, and hashtags.
+          </p>
+          <div class="hero-actions">
+            <button class="btn btn-primary" id="startGeneratingBtn" type="button">Start Generating</button>
+            <button class="btn btn-secondary" id="viewExamplesBtn" type="button">View Examples</button>
+          </div>
+          <div class="hero-stats">
+            <article class="stat-card">
+              <strong>3 Platforms</strong>
+              <span>TikTok, Shorts, Reels</span>
+            </article>
+            <article class="stat-card">
+              <strong>3 Languages</strong>
+              <span>Arabic, English, French</span>
+            </article>
+            <article class="stat-card">
+              <strong>Instant Demo</strong>
+              <span>Runs fully in your browser</span>
+            </article>
+          </div>
+        </div>
+
+        <aside class="hero-panel">
+          <div class="panel-badge">Live Demo Preview</div>
+          <div class="preview-card">
+            <p class="preview-label">Sample Output</p>
+            <h2>AI tools for creators</h2>
+            <ul class="preview-list">
+              <li>Video idea tailored for short-form platforms</li>
+              <li>Hook optimized for scroll-stopping intros</li>
+              <li>Caption, hashtags, and CTA ready to post</li>
+            </ul>
+          </div>
+        </aside>
+      </section>
+
+      <section class="section" id="dashboard">
+        <div class="section-heading">
+          <span class="eyebrow">Dashboard</span>
+          <h2>Track your creator workflow in one place</h2>
+          <p>Follow generation activity, saved content volume, and the latest platform and language context.</p>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="dashboard-card">
+            <span class="dashboard-label">Total Generations</span>
+            <strong id="dashboardTotalGenerations">0</strong>
+            <p>Cumulative count of generated outputs in this browser.</p>
+          </article>
+          <article class="dashboard-card">
+            <span class="dashboard-label">Saved Items</span>
+            <strong id="dashboardSavedItems">0</strong>
+            <p>How many saved generation cards are currently stored locally.</p>
+          </article>
+          <article class="dashboard-card">
+            <span class="dashboard-label">Pinned Items</span>
+            <strong id="dashboardPinnedItems">0</strong>
+            <p>Saved items currently pinned to stay at the top of history.</p>
+          </article>
+          <article class="dashboard-card">
+            <span class="dashboard-label">Last Platform</span>
+            <strong id="dashboardLastPlatform">TikTok</strong>
+            <p>Updates when you generate or reload a saved item.</p>
+          </article>
+          <article class="dashboard-card">
+            <span class="dashboard-label">Last Language</span>
+            <strong id="dashboardLastLanguage">English</strong>
+            <p>Reflects the latest visible output in the generator workspace.</p>
+          </article>
+          <article class="dashboard-card">
+            <span class="dashboard-label">TikTok Generations</span>
+            <strong id="dashboardTikTokGenerations">0</strong>
+            <p>Saved history items currently assigned to TikTok.</p>
+          </article>
+          <article class="dashboard-card">
+            <span class="dashboard-label">YouTube Generations</span>
+            <strong id="dashboardYouTubeGenerations">0</strong>
+            <p>Saved history items currently assigned to YouTube Shorts.</p>
+          </article>
+          <article class="dashboard-card">
+            <span class="dashboard-label">Instagram Generations</span>
+            <strong id="dashboardInstagramGenerations">0</strong>
+            <p>Saved history items currently assigned to Instagram Reels.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section workspace-section" id="workspaceTabs">
+        <div class="section-heading workspace-heading">
+          <span class="eyebrow">Workspace</span>
+          <h2>Switch between creation, saved history, and pricing</h2>
+          <p>Tabs keep the experience focused without leaving the page.</p>
+        </div>
+
+        <div class="tabs-shell card">
+          <div class="tab-list" role="tablist" aria-label="Trend2Short sections">
+            <button class="tab-btn is-active" id="tabGenerator" type="button" role="tab" aria-selected="true" aria-controls="generatorPanel" data-tab-target="generator">Generator</button>
+            <button class="tab-btn" id="tabHistory" type="button" role="tab" aria-selected="false" aria-controls="historyPanel" data-tab-target="history">History</button>
+            <button class="tab-btn" id="tabPricing" type="button" role="tab" aria-selected="false" aria-controls="pricingPanel" data-tab-target="pricing">Pricing</button>
+          </div>
+
+          <div class="tab-panels">
+            <div class="tab-panel is-active" id="generatorPanel" role="tabpanel" aria-labelledby="tabGenerator" data-tab-panel="generator">
+              <section class="workspace-block" id="generator">
+                <div class="section-heading panel-heading">
+                  <span class="eyebrow">Generator</span>
+                  <h2>Build a short-form content angle in seconds</h2>
+                  <p>Enter a trend, pick your target format, and generate a polished demo output instantly.</p>
+                </div>
+
+                <div class="generator-grid">
+                  <form class="generator-form card" id="trendForm">
+                    <div class="field-group field-full">
+                      <label for="trendTopic">Trending Topic</label>
+                      <input
+                        id="trendTopic"
+                        name="trendTopic"
+                        type="text"
+                        placeholder="Example: AI tools for creators"
+                        value="AI tools for creators"
+                        required
+                      >
+                    </div>
+
+                    <div class="field-group">
+                      <label for="platform">Platform</label>
+                      <select id="platform" name="platform">
+                        <option value="TikTok">TikTok</option>
+                        <option value="YouTube Shorts">YouTube Shorts</option>
+                        <option value="Instagram Reels">Instagram Reels</option>
+                      </select>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="language">Language</label>
+                      <select id="language" name="language">
+                        <option value="English">English</option>
+                        <option value="Arabic">Arabic</option>
+                        <option value="French">French</option>
+                      </select>
+                    </div>
+
+                    <div class="field-group">
+                      <label for="style">Style</label>
+                      <select id="style" name="style">
+                        <option value="Educational">Educational</option>
+                        <option value="Viral">Viral</option>
+                        <option value="Storytelling">Storytelling</option>
+                        <option value="Professional">Professional</option>
+                      </select>
+                    </div>
+
+                    <div class="field-group field-full">
+                      <button class="btn btn-primary btn-wide" type="submit">Generate Content</button>
+                    </div>
+                  </form>
+
+                  <section class="results card" aria-live="polite">
+                    <div class="results-header">
+                      <div>
+                        <span class="eyebrow">Generated Output</span>
+                        <h3 id="resultTitle">AI tools for creators</h3>
+                      </div>
+                      <div class="results-actions">
+                        <span class="results-tag" id="resultMeta">TikTok | English | Educational</span>
+                        <button class="btn btn-secondary btn-compact" id="exportTxtBtn" type="button">Export as TXT</button>
+                      </div>
+                    </div>
+
+                    <div class="result-list">
+                      <article class="result-item">
+                        <div class="result-item-head">
+                          <h4>Video Idea</h4>
+                          <button class="copy-btn" type="button" data-copy-target="videoIdea">Copy</button>
+                        </div>
+                        <p id="videoIdea"></p>
+                      </article>
+                      <article class="result-item">
+                        <div class="result-item-head">
+                          <h4>Hook</h4>
+                          <button class="copy-btn" type="button" data-copy-target="strongHook">Copy</button>
+                        </div>
+                        <p id="strongHook"></p>
+                      </article>
+                      <article class="result-item">
+                        <div class="result-item-head">
+                          <h4>Script</h4>
+                          <button class="copy-btn" type="button" data-copy-target="shortScript">Copy</button>
+                        </div>
+                        <p id="shortScript"></p>
+                      </article>
+                      <article class="result-item">
+                        <div class="result-item-head">
+                          <h4>Caption</h4>
+                          <button class="copy-btn" type="button" data-copy-target="caption">Copy</button>
+                        </div>
+                        <p id="caption"></p>
+                      </article>
+                      <article class="result-item">
+                        <div class="result-item-head">
+                          <h4>Hashtags</h4>
+                          <button class="copy-btn" type="button" data-copy-target="hashtags">Copy</button>
+                        </div>
+                        <p id="hashtags"></p>
+                      </article>
+                      <article class="result-item">
+                        <div class="result-item-head">
+                          <h4>CTA</h4>
+                          <button class="copy-btn" type="button" data-copy-target="callToAction">Copy</button>
+                        </div>
+                        <p id="callToAction"></p>
+                      </article>
+                    </div>
+                  </section>
+                </div>
+              </section>
+
+              <section class="workspace-block" id="examples">
+                <div class="section-heading panel-heading">
+                  <span class="eyebrow">Examples</span>
+                  <h2>Start from ready-made trend prompts</h2>
+                  <p>Use one of these sample trends to populate the generator instantly.</p>
+                </div>
+
+                <div class="card-grid examples-grid">
+                  <article class="card example-card">
+                    <h3>AI tools for creators</h3>
+                    <p>Show creators how new AI workflows can speed up scripting, editing, and publishing.</p>
+                    <button class="btn btn-secondary use-trend-btn" type="button" data-trend="AI tools for creators">Use This Trend</button>
+                  </article>
+
+                  <article class="card example-card">
+                    <h3>How to make money online</h3>
+                    <p>Package a practical angle around digital products, freelancing, or monetization tactics.</p>
+                    <button class="btn btn-secondary use-trend-btn" type="button" data-trend="How to make money online">Use This Trend</button>
+                  </article>
+
+                  <article class="card example-card">
+                    <h3>Educational apps for kids</h3>
+                    <p>Highlight useful learning apps, screen-time tips, and parent-friendly recommendations.</p>
+                    <button class="btn btn-secondary use-trend-btn" type="button" data-trend="Educational apps for kids">Use This Trend</button>
+                  </article>
+                </div>
+              </section>
+
+              <section class="workspace-block" id="features">
+                <div class="section-heading panel-heading">
+                  <span class="eyebrow">Features</span>
+                  <h2>Built for fast creator workflows</h2>
+                  <p>The structure is simple now, but ready to evolve into a full SaaS experience later.</p>
+                </div>
+
+                <div class="card-grid features-grid">
+                  <article class="card feature-card">
+                    <h3>Trend to Video Idea</h3>
+                    <p>Turn a raw topic into a clear short-form angle tailored for platform behavior.</p>
+                  </article>
+                  <article class="card feature-card">
+                    <h3>Hook Generator</h3>
+                    <p>Create a stronger opening line designed to stop the scroll in the first seconds.</p>
+                  </article>
+                  <article class="card feature-card">
+                    <h3>Short Script Generator</h3>
+                    <p>Produce a compact structure for intro, value delivery, and close.</p>
+                  </article>
+                  <article class="card feature-card">
+                    <h3>Caption &amp; Hashtags</h3>
+                    <p>Get supporting copy that feels launch-ready for a quick publishing workflow.</p>
+                  </article>
+                  <article class="card feature-card">
+                    <h3>Multi-language Support</h3>
+                    <p>Generate demo outputs in Arabic, English, or French for broader creator reach.</p>
+                  </article>
+                </div>
+              </section>
+            </div>
+
+            <div class="tab-panel" id="historyPanel" role="tabpanel" aria-labelledby="tabHistory" data-tab-panel="history" hidden>
+              <section class="workspace-block" id="saved">
+                <div class="section-heading panel-heading saved-heading">
+                  <div>
+                    <span class="eyebrow">History</span>
+                    <h2>Review, search, reload, or remove saved generations</h2>
+                    <p>Everything in this panel is stored locally in your browser using LocalStorage only.</p>
+                  </div>
+                  <div class="history-toolbar">
+                    <div class="field-group search-group">
+                      <label for="historySearch">Search History</label>
+                      <input id="historySearch" type="search" placeholder="Search by trend, platform, or language">
+                    </div>
+                    <div class="field-group filter-group">
+                      <label for="historyFilter">Filter</label>
+                      <select id="historyFilter">
+                        <option value="all">All</option>
+                        <option value="pinned">Pinned only</option>
+                        <option value="TikTok">TikTok</option>
+                        <option value="YouTube Shorts">YouTube Shorts</option>
+                        <option value="Instagram Reels">Instagram Reels</option>
+                      </select>
+                    </div>
+                    <button class="btn btn-secondary btn-compact" id="clearHistoryBtn" type="button">Clear History</button>
+                  </div>
+                </div>
+
+                <div class="saved-history card">
+                  <div class="saved-empty" id="savedEmptyState">No saved generations yet.</div>
+                  <div class="saved-list" id="savedList"></div>
+                </div>
+              </section>
+            </div>
+
+            <div class="tab-panel" id="pricingPanel" role="tabpanel" aria-labelledby="tabPricing" data-tab-panel="pricing" hidden>
+              <section class="workspace-block" id="pricing">
+                <div class="section-heading panel-heading">
+                  <span class="eyebrow">Pricing</span>
+                  <h2>Simple plans for the first release</h2>
+                  <p>A lightweight pricing block that can later connect to real user accounts and billing.</p>
+                </div>
+
+                <div class="card-grid pricing-grid">
+                  <article class="card price-card">
+                    <span class="plan-tag">Free Plan</span>
+                    <h3>$0</h3>
+                    <p>3 generations per day</p>
+                    <button class="btn btn-secondary coming-soon-btn" type="button">Coming Soon</button>
+                  </article>
+
+                  <article class="card price-card price-card-highlight">
+                    <span class="plan-tag">Pro Plan</span>
+                    <h3>$19</h3>
+                    <p>Unlimited generations</p>
+                    <p>Advanced templates</p>
+                    <p>No watermark</p>
+                    <button class="btn btn-primary coming-soon-btn" type="button">Coming Soon</button>
+                  </article>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer" id="footer">
+      <nav class="footer-nav" aria-label="Footer links">
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+        <a href="privacy-policy.html">Privacy Policy</a>
+        <a href="terms-of-service.html">Terms of Service</a>
+      </nav>
+      <p>&copy; 2026 Trend2Short AI. Built for creators.</p>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
