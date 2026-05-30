@@ -3,6 +3,7 @@
     { "src": "^/$", "dest": "/index.html" },
     { "src": "^/examples/?$", "dest": "/examples.html" },
     { "src": "^/ai-generator/?$", "dest": "/ai-generator.html" },
+    { "src": "^/setup/?$", "dest": "/setup.html" },
     { "src": "^/roadmap/?$", "dest": "/roadmap.html" },
     { "src": "^/about/?$", "dest": "/about.html" },
     { "src": "^/contact/?$", "dest": "/contact.html" },

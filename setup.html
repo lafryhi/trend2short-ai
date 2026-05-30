@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup | Trend2Short AI</title>
+  <meta name="description" content="Learn how to configure the Gemini API key for Trend2Short AI and understand Demo Mode versus Live Mode.">
+  <meta name="robots" content="index, follow">
+  <meta name="author" content="Trend2Short AI">
+  <meta name="theme-color" content="#07162f">
+  <link rel="canonical" href="https://trend2short-ai.vercel.app/setup.html">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="legal-page">
+  <div class="page-shell">
+    <header class="simple-header">
+      <div class="brand-cluster">
+        <a class="brand" href="index.html">Trend2Short AI</a>
+        <span class="site-badge">MVP Version</span>
+      </div>
+      <nav class="simple-nav" aria-label="Setup navigation">
+        <a href="index.html">Home</a>
+        <a href="examples.html">Examples</a>
+        <a href="ai-generator.html">AI Generator</a>
+        <a href="setup.html">Setup</a>
+        <a href="roadmap.html">Roadmap</a>
+      </nav>
+    </header>
+
+    <main class="roadmap-page-main">
+      <section class="roadmap-hero">
+        <span class="eyebrow">Setup</span>
+        <h1>Connect Gemini safely, or keep using Demo Mode locally.</h1>
+        <p>
+          Trend2Short AI works without any backend. You can keep the product in Demo Mode with no API key,
+          or switch to Live Mode by adding a Gemini API key to the local config file on your machine only.
+        </p>
+      </section>
+
+      <section class="roadmap-grid">
+        <article class="card roadmap-card">
+          <h2>1. Get A Gemini API Key</h2>
+          <p>
+            Create a Gemini API key from Google AI Studio. Keep that key private and never commit it to GitHub.
+          </p>
+          <p>
+            Official setup starts at
+            <a href="https://ai.google.dev/" target="_blank" rel="noreferrer">ai.google.dev</a>.
+          </p>
+        </article>
+
+        <article class="card roadmap-card">
+          <h2>2. Place The Key Locally</h2>
+          <p>
+            Open <strong>config.js</strong> and keep the provider set to Gemini:
+          </p>
+          <pre><code>window.APP_CONFIG = {
+  API_PROVIDER: "gemini",
+  API_KEY: "your-key-here"
+};</code></pre>
+          <p>
+            Do not publish the real key. Leave <strong>config.example.js</strong> empty as the template file.
+          </p>
+        </article>
+
+        <article class="card roadmap-card">
+          <h3>Demo Mode</h3>
+          <p>
+            If <strong>API_KEY</strong> is empty, the AI Generator shows <strong>Running in Demo Mode</strong>
+            and uses the local browser-based generator as a fallback.
+          </p>
+        </article>
+
+        <article class="card roadmap-card">
+          <h3>Live Mode</h3>
+          <p>
+            If <strong>API_KEY</strong> is present, Trend2Short AI sends requests directly from the browser to
+            <strong>Gemini 2.5 Flash</strong> and expects a JSON-only response for hooks, ideas, scripts, captions,
+            hashtags, and CTAs.
+          </p>
+        </article>
+
+        <article class="card roadmap-card">
+          <h3>Provider Architecture</h3>
+          <p>
+            Gemini is the first provider only. The service layer in <strong>js/services/ai.js</strong> is organized
+            so future providers such as OpenAI, Claude, and OpenRouter can be added without rewriting the UI.
+          </p>
+        </article>
+
+        <article class="card roadmap-card">
+          <h3>Rate Limit</h3>
+          <p>
+            The MVP enforces a local daily limit of <strong>10 AI generations</strong> using LocalStorage.
+            This keeps the front-end flow predictable while the product remains browser-only.
+          </p>
+        </article>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <nav class="footer-nav" aria-label="Footer links">
+        <a href="index.html">Home</a>
+        <a href="examples.html">Examples</a>
+        <a href="ai-generator.html">AI Generator</a>
+        <a href="setup.html">Setup</a>
+        <a href="roadmap.html">Roadmap</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+        <a href="privacy-policy.html">Privacy Policy</a>
+        <a href="terms-of-service.html">Terms of Service</a>
+        <a href="https://github.com/lafryhi/trend2short-ai" target="_blank" rel="noreferrer">GitHub</a>
+      </nav>
+      <p>&copy; 2026 Trend2Short AI. Built for creators.</p>
+    </footer>
+  </div>
+</body>
+</html>

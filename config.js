@@ -1,4 +1,4 @@
-window.TREND2SHORT_CONFIG = {
-  API_PROVIDER: "mock",
+window.APP_CONFIG = {
+  API_PROVIDER: "gemini",
   API_KEY: ""
 };

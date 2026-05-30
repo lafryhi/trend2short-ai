@@ -34,6 +34,7 @@
         <a href="index.html">Home</a>
         <a href="examples.html">Examples</a>
         <a href="ai-generator.html">AI Generator</a>
+        <a href="setup.html">Setup</a>
         <a href="roadmap.html">Roadmap</a>
         <a href="contact.html">Contact</a>
       </nav>
@@ -59,11 +60,33 @@
 
       <section class="ai-generator-shell" data-ai-generator-root>
         <div class="ai-toolbar">
-          <span class="site-badge">MVP Version</span>
-          <div class="ai-usage-card">
-            <span>AI Generations Today</span>
-            <strong id="aiUsageCount">0</strong>
+          <div class="ai-toolbar-stack">
+            <span class="site-badge">MVP Version</span>
+            <div class="ai-usage-card">
+              <span>AI Generations Today</span>
+              <strong><span id="aiUsageCount">0</span> / <span id="aiUsageLimit">10</span></strong>
+            </div>
           </div>
+
+          <article class="card ai-status-card">
+            <span class="dashboard-label">AI Status</span>
+            <div class="ai-status-grid">
+              <div class="ai-status-metric">
+                <span>Provider</span>
+                <strong id="aiProviderValue">Gemini</strong>
+              </div>
+              <div class="ai-status-metric">
+                <span>Mode</span>
+                <strong id="aiModeValue">Demo</strong>
+              </div>
+              <div class="ai-status-metric">
+                <span>API Status</span>
+                <strong id="aiApiStatusValue">Missing Key</strong>
+              </div>
+            </div>
+          </article>
+
+          <button class="btn btn-secondary btn-compact" id="resetDemoDataBtn" type="button">Reset Demo Data</button>
         </div>
 
         <div class="generator-grid">
@@ -187,6 +210,7 @@
         <a href="index.html">Home</a>
         <a href="examples.html">Examples</a>
         <a href="ai-generator.html">AI Generator</a>
+        <a href="setup.html">Setup</a>
         <a href="roadmap.html">Roadmap</a>
         <a href="about.html">About</a>
         <a href="contact.html">Contact</a>

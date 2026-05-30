@@ -1,6 +1,8 @@
 (function () {
   const USAGE_STORAGE_KEY = "trend2short-ai-usage";
-  const DEFAULT_PROVIDER = "mock";
+  const DEFAULT_PROVIDER = "gemini";
+  const DAILY_LIMIT = 10;
+  const GEMINI_MODEL = "gemini-2.5-flash";
   const DEFAULT_SETTINGS = {
     API_PROVIDER: DEFAULT_PROVIDER,
     API_KEY: ""
@@ -23,10 +25,10 @@
         promise: "teach something practical in under 30 seconds"
       },
       Arabic: {
-        label: "تعليمي",
-        angle: "قسم الموضوع إلى شرح سريع مع نقاط عملية واضحة",
-        tone: "واضح ومفيد",
-        promise: "تقديم فائدة عملية في أقل من 30 ثانية"
+        label: "\u062a\u0639\u0644\u064a\u0645\u064a",
+        angle: "\u0642\u0633\u0645 \u0627\u0644\u0645\u0648\u0636\u0648\u0639 \u0625\u0644\u0649 \u0634\u0631\u062d \u0633\u0631\u064a\u0639 \u0645\u0639 \u0646\u0642\u0627\u0637 \u0639\u0645\u0644\u064a\u0629 \u0648\u0627\u0636\u062d\u0629",
+        tone: "\u0648\u0627\u0636\u062d \u0648\u0645\u0641\u064a\u062f",
+        promise: "\u062a\u0642\u062f\u064a\u0645 \u0641\u0627\u0626\u062f\u0629 \u0639\u0645\u0644\u064a\u0629 \u0641\u064a \u0623\u0642\u0644 \u0645\u0646 30 \u062b\u0627\u0646\u064a\u0629"
       },
       French: {
         label: "educatif",
@@ -43,10 +45,10 @@
         promise: "grab attention before the swipe"
       },
       Arabic: {
-        label: "فيروسي",
-        angle: "ابن الفكرة على المفاجأة والفضول والإيقاع السريع",
-        tone: "سريع وجذاب",
-        promise: "خطف الانتباه قبل تجاوز الفيديو"
+        label: "\u0641\u064a\u0631\u0648\u0633\u064a",
+        angle: "\u0627\u0628\u0646 \u0627\u0644\u0641\u0643\u0631\u0629 \u0639\u0644\u0649 \u0627\u0644\u0645\u0641\u0627\u062c\u0623\u0629 \u0648\u0627\u0644\u0641\u0636\u0648\u0644 \u0648\u0627\u0644\u0625\u064a\u0642\u0627\u0639 \u0627\u0644\u0633\u0631\u064a\u0639",
+        tone: "\u0633\u0631\u064a\u0639 \u0648\u062c\u0630\u0627\u0628",
+        promise: "\u062e\u0637\u0641 \u0627\u0644\u0627\u0646\u062a\u0628\u0627\u0647 \u0642\u0628\u0644 \u062a\u062c\u0627\u0648\u0632 \u0627\u0644\u0641\u064a\u062f\u064a\u0648"
       },
       French: {
         label: "viral",
@@ -63,10 +65,10 @@
         promise: "make the viewer stay until the ending"
       },
       Arabic: {
-        label: "قصصي",
-        angle: "حول الموضوع إلى قصة قصيرة فيها بداية وتحول ونهاية",
-        tone: "شخصي وسلس",
-        promise: "جعل المشاهد ينتظر النهاية"
+        label: "\u0642\u0635\u0635\u064a",
+        angle: "\u062d\u0648\u0644 \u0627\u0644\u0645\u0648\u0636\u0648\u0639 \u0625\u0644\u0649 \u0642\u0635\u0629 \u0642\u0635\u064a\u0631\u0629 \u0641\u064a\u0647\u0627 \u0628\u062f\u0627\u064a\u0629 \u0648\u062a\u062d\u0648\u0644 \u0648\u0646\u0647\u0627\u064a\u0629",
+        tone: "\u0634\u062e\u0635\u064a \u0648\u0633\u0644\u0633",
+        promise: "\u062c\u0639\u0644 \u0627\u0644\u0645\u0634\u0627\u0647\u062f \u064a\u0646\u062a\u0638\u0631 \u0627\u0644\u0646\u0647\u0627\u064a\u0629"
       },
       French: {
         label: "storytelling",
@@ -83,10 +85,10 @@
         promise: "deliver concise expert value"
       },
       Arabic: {
-        label: "احترافي",
-        angle: "قدم الموضوع بصياغة موثوقة ومنظمة ونبرة خبيرة",
-        tone: "احترافي وواثق",
-        promise: "تقديم قيمة مختصرة بلمسة خبيرة"
+        label: "\u0627\u062d\u062a\u0631\u0627\u0641\u064a",
+        angle: "\u0642\u062f\u0645 \u0627\u0644\u0645\u0648\u0636\u0648\u0639 \u0628\u0635\u064a\u0627\u063a\u0629 \u0645\u0648\u062b\u0648\u0642\u0629 \u0648\u0645\u0646\u0638\u0645\u0629 \u0648\u0646\u0628\u0631\u0629 \u062e\u0628\u064a\u0631\u0629",
+        tone: "\u0627\u062d\u062a\u0631\u0627\u0641\u064a \u0648\u0648\u0627\u062b\u0642",
+        promise: "\u062a\u0642\u062f\u064a\u0645 \u0642\u064a\u0645\u0629 \u0645\u062e\u062a\u0635\u0631\u0629 \u0628\u0644\u0645\u0633\u0629 \u062e\u0628\u064a\u0631\u0629"
       },
       French: {
         label: "professionnel",
@@ -100,17 +102,17 @@
   const platformProfiles = {
     TikTok: {
       English: "fast cuts, bold phrasing, and a direct opening",
-      Arabic: "لقطات سريعة وبداية مباشرة وصياغة جريئة",
+      Arabic: "\u0644\u0642\u0637\u0627\u062a \u0633\u0631\u064a\u0639\u0629 \u0648\u0628\u062f\u0627\u064a\u0629 \u0645\u0628\u0627\u0634\u0631\u0629 \u0648\u0635\u064a\u0627\u063a\u0629 \u062c\u0631\u064a\u0626\u0629",
       French: "des coupes rapides, une accroche directe et un ton percutant"
     },
     "YouTube Shorts": {
       English: "search-friendly phrasing with clear value delivery",
-      Arabic: "صياغة واضحة وسهلة الفهم مع قيمة مباشرة",
+      Arabic: "\u0635\u064a\u0627\u063a\u0629 \u0648\u0627\u0636\u062d\u0629 \u0648\u0633\u0647\u0644\u0629 \u0627\u0644\u0641\u0647\u0645 \u0645\u0639 \u0642\u064a\u0645\u0629 \u0645\u0628\u0627\u0634\u0631\u0629",
       French: "une formulation claire avec une promesse de valeur immediate"
     },
     "Instagram Reels": {
       English: "clean lifestyle framing with shareable social energy",
-      Arabic: "عرض بصري أنيق وروح اجتماعية قابلة للمشاركة",
+      Arabic: "\u0639\u0631\u0636 \u0628\u0635\u0631\u064a \u0623\u0646\u064a\u0642 \u0648\u0631\u0648\u062d \u0627\u062c\u062a\u0645\u0627\u0639\u064a\u0629 \u0642\u0627\u0628\u0644\u0629 \u0644\u0644\u0645\u0634\u0627\u0631\u0643\u0629",
       French: "un angle visuel propre avec une energie sociale facile a partager"
     }
   };
@@ -130,15 +132,15 @@
     },
     Arabic: {
       hooks: [
-        "أغلب صناع المحتوى لم يستغلوا هذا الجانب من {topic} بعد.",
-        "إذا كنت تنشر عن {topic} فابدأ بهذه الزاوية.",
-        "هذه الفكرة حول {topic} قد تصنع فرقًا في الفيديو القادم."
+        "\u0623\u063a\u0644\u0628 \u0635\u0646\u0627\u0639 \u0627\u0644\u0645\u062d\u062a\u0648\u0649 \u0644\u0645 \u064a\u0633\u062a\u063a\u0644\u0648\u0627 \u0647\u0630\u0627 \u0627\u0644\u062c\u0627\u0646\u0628 \u0645\u0646 {topic} \u0628\u0639\u062f.",
+        "\u0625\u0630\u0627 \u0643\u0646\u062a \u062a\u0646\u0634\u0631 \u0639\u0646 {topic} \u0641\u0627\u0628\u062f\u0623 \u0628\u0647\u0630\u0647 \u0627\u0644\u0632\u0627\u0648\u064a\u0629.",
+        "\u0647\u0630\u0647 \u0627\u0644\u0641\u0643\u0631\u0629 \u062d\u0648\u0644 {topic} \u0642\u062f \u062a\u0635\u0646\u0639 \u0641\u0631\u0642\u064b\u0627 \u0641\u064a \u0627\u0644\u0641\u064a\u062f\u064a\u0648 \u0627\u0644\u0642\u0627\u062f\u0645."
       ],
-      scriptIntro: "ابدأ بجملة قوية عن",
-      scriptMiddle: "ثم",
-      scriptOutro: "اختم بنصيحة واضحة وادع المشاهد لحفظ الفيديو والعودة إليه لاحقًا.",
-      captionStart: "ملخص سريع:",
-      cta: "جرّب Trend2Short AI وحوّل الترند القادم إلى فيديو قصير جاهز."
+      scriptIntro: "\u0627\u0628\u062f\u0623 \u0628\u062c\u0645\u0644\u0629 \u0642\u0648\u064a\u0629 \u0639\u0646",
+      scriptMiddle: "\u062b\u0645",
+      scriptOutro: "\u0627\u062e\u062a\u0645 \u0628\u0646\u0635\u064a\u062d\u0629 \u0648\u0627\u0636\u062d\u0629 \u0648\u0627\u062f\u0639 \u0627\u0644\u0645\u0634\u0627\u0647\u062f \u0644\u062d\u0641\u0638 \u0627\u0644\u0641\u064a\u062f\u064a\u0648 \u0648\u0627\u0644\u0639\u0648\u062f\u0629 \u0625\u0644\u064a\u0647 \u0644\u0627\u062d\u0642\u064b\u0627.",
+      captionStart: "\u0645\u0644\u062e\u0635 \u0633\u0631\u064a\u0639:",
+      cta: "\u062c\u0631\u0651\u0628 Trend2Short AI \u0648\u062d\u0648\u0651\u0644 \u0627\u0644\u062a\u0631\u0646\u062f \u0627\u0644\u0642\u0627\u062f\u0645 \u0625\u0644\u0649 \u0641\u064a\u062f\u064a\u0648 \u0642\u0635\u064a\u0631 \u062c\u0627\u0647\u0632."
     },
     French: {
       hooks: [
@@ -198,15 +200,33 @@
     return nextValue;
   }
 
+  function resetUsageState() {
+    window.localStorage.removeItem(USAGE_STORAGE_KEY);
+    return 0;
+  }
+
   function wait(ms) {
     return new Promise((resolve) => {
       window.setTimeout(resolve, ms);
     });
   }
 
+  function getGlobalConfig() {
+    if (window.APP_CONFIG && typeof window.APP_CONFIG === "object") {
+      return window.APP_CONFIG;
+    }
+
+    if (window.TREND2SHORT_CONFIG && typeof window.TREND2SHORT_CONFIG === "object") {
+      return window.TREND2SHORT_CONFIG;
+    }
+
+    return null;
+  }
+
   function loadOptionalConfig() {
-    if (window.TREND2SHORT_CONFIG) {
-      return Promise.resolve(window.TREND2SHORT_CONFIG);
+    const existingConfig = getGlobalConfig();
+    if (existingConfig) {
+      return Promise.resolve(existingConfig);
     }
 
     if (configLoadPromise) {
@@ -214,18 +234,18 @@
     }
 
     configLoadPromise = new Promise((resolve) => {
-      const existingScript = document.querySelector('script[data-trend2short-config="true"]');
+      const existingScript = document.querySelector('script[data-app-config="true"]');
 
       if (existingScript) {
-        resolve(window.TREND2SHORT_CONFIG || DEFAULT_SETTINGS);
+        resolve(getGlobalConfig() || DEFAULT_SETTINGS);
         return;
       }
 
       const script = document.createElement("script");
       script.src = "config.js";
       script.defer = true;
-      script.dataset.trend2shortConfig = "true";
-      script.onload = () => resolve(window.TREND2SHORT_CONFIG || DEFAULT_SETTINGS);
+      script.dataset.appConfig = "true";
+      script.onload = () => resolve(getGlobalConfig() || DEFAULT_SETTINGS);
       script.onerror = () => resolve(DEFAULT_SETTINGS);
       document.head.appendChild(script);
     });
@@ -235,9 +255,24 @@
 
   async function getSettings() {
     const loadedConfig = await loadOptionalConfig();
+    const provider = String(loadedConfig.API_PROVIDER || DEFAULT_PROVIDER).toLowerCase();
     return {
-      API_PROVIDER: String(loadedConfig.API_PROVIDER || DEFAULT_PROVIDER).toLowerCase(),
+      API_PROVIDER: provider,
       API_KEY: String(loadedConfig.API_KEY || "").trim()
+    };
+  }
+
+  async function getStatus() {
+    const settings = await getSettings();
+    const hasApiKey = Boolean(settings.API_KEY);
+    const provider = settings.API_PROVIDER || DEFAULT_PROVIDER;
+
+    return {
+      provider,
+      providerLabel: provider === "gemini" ? "Gemini" : provider.charAt(0).toUpperCase() + provider.slice(1),
+      mode: hasApiKey ? "Live" : "Demo",
+      apiStatus: hasApiKey ? "Ready" : "Missing Key",
+      hasApiKey
     };
   }
 
@@ -283,8 +318,8 @@
     let caption = "";
 
     if (language === "Arabic") {
-      videoIdea = `أنشئ فيديو ${styleProfile.label} لمنصة ${platform} حول ${topic} يعتمد على ${platformProfile} بهدف ${styleProfile.promise}.`;
-      caption = `${languageProfile.captionStart} ${topic} بصياغة ${styleProfile.label} مخصصة لـ ${platform}. أسلوب ${styleProfile.tone} مع قيمة سريعة ودعوة واضحة للتفاعل.`;
+      videoIdea = `\u0623\u0646\u0634\u0626 \u0641\u064a\u062f\u064a\u0648 ${styleProfile.label} \u0644\u0645\u0646\u0635\u0629 ${platform} \u062d\u0648\u0644 ${topic} \u064a\u0639\u062a\u0645\u062f \u0639\u0644\u0649 ${platformProfile} \u0628\u0647\u062f\u0641 ${styleProfile.promise}.`;
+      caption = `${languageProfile.captionStart} ${topic} \u0628\u0635\u064a\u0627\u063a\u0629 ${styleProfile.label} \u0645\u062e\u0635\u0635\u0629 \u0644\u0640 ${platform}. \u0623\u0633\u0644\u0648\u0628 ${styleProfile.tone} \u0645\u0639 \u0642\u064a\u0645\u0629 \u0633\u0631\u064a\u0639\u0629 \u0648\u062f\u0639\u0648\u0629 \u0648\u0627\u0636\u062d\u0629 \u0644\u0644\u062a\u0641\u0627\u0639\u0644.`;
     } else if (language === "French") {
       videoIdea = `Cree une video courte ${styleProfile.label} pour ${platform} sur ${topic}, en utilisant ${platformProfile} afin de ${styleProfile.promise}.`;
       caption = `${languageProfile.captionStart} ${topic} traite dans un style ${styleProfile.label} pour ${platform}. Un rendu ${styleProfile.tone}, rapide et facile a publier.`;
@@ -344,17 +379,161 @@
     return normalized;
   }
 
+  function extractJsonCandidate(rawText) {
+    const trimmed = String(rawText || "").trim();
+
+    if (!trimmed) {
+      throw new Trend2ShortAIError("INVALID_RESPONSE", "Gemini returned an empty response.");
+    }
+
+    const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    if (fencedMatch) {
+      return fencedMatch[1].trim();
+    }
+
+    const firstBrace = trimmed.indexOf("{");
+    const lastBrace = trimmed.lastIndexOf("}");
+
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      return trimmed.slice(firstBrace, lastBrace + 1);
+    }
+
+    return trimmed;
+  }
+
+  function parseStrictJsonPayload(rawText) {
+    const jsonText = extractJsonCandidate(rawText);
+    const parsed = safeJsonParse(jsonText, null);
+
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Trend2ShortAIError("INVALID_RESPONSE", "Gemini returned invalid JSON. Please try again.");
+    }
+
+    return parsed;
+  }
+
+  function buildGeminiPrompt(input) {
+    return [
+      "Generate short-form video marketing content for Trend2Short AI.",
+      `Trend Topic: ${input.topic}`,
+      `Platform: ${input.platform}`,
+      `Language: ${input.language}`,
+      `Style: ${input.style}`,
+      "Return JSON only with these keys exactly:",
+      "{\"hook\":\"\",\"videoIdea\":\"\",\"shortScript\":\"\",\"caption\":\"\",\"hashtags\":\"\",\"cta\":\"\"}",
+      "Requirements:",
+      "- Match the requested language exactly.",
+      "- Keep hook concise and strong.",
+      "- Keep videoIdea to one clear sentence.",
+      "- Keep shortScript compact and ready to narrate.",
+      "- Keep hashtags as a single string with space-separated hashtags.",
+      "- Do not include markdown, code fences, or explanations."
+    ].join("\n");
+  }
+
+  function buildGeminiBody(input) {
+    return {
+      systemInstruction: {
+        parts: [
+          {
+            text: "You are Trend2Short AI. Return valid JSON only. Do not wrap the JSON in markdown."
+          }
+        ]
+      },
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: buildGeminiPrompt(input)
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            hook: { type: "STRING" },
+            videoIdea: { type: "STRING" },
+            shortScript: { type: "STRING" },
+            caption: { type: "STRING" },
+            hashtags: { type: "STRING" },
+            cta: { type: "STRING" }
+          },
+          required: ["hook", "videoIdea", "shortScript", "caption", "hashtags", "cta"]
+        }
+      }
+    };
+  }
+
+  async function parseGeminiHttpError(response) {
+    const rawText = await response.text();
+    const parsed = safeJsonParse(rawText, null);
+    const apiMessage = parsed?.error?.message;
+    return apiMessage || `Gemini request failed with status ${response.status}.`;
+  }
+
+  function extractGeminiText(payload) {
+    const firstCandidate = payload?.candidates?.[0];
+    const parts = firstCandidate?.content?.parts;
+    const text = Array.isArray(parts)
+      ? parts.map((part) => part.text || "").join("").trim()
+      : "";
+
+    if (text) {
+      return text;
+    }
+
+    const blockReason = payload?.promptFeedback?.blockReason;
+    if (blockReason) {
+      throw new Trend2ShortAIError("API_ERROR", `Gemini blocked the request: ${blockReason}.`);
+    }
+
+    throw new Trend2ShortAIError("INVALID_RESPONSE", "Gemini returned no usable text.");
+  }
+
+  async function generateWithGemini(input, apiKey) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+    const response = await window.fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey
+      },
+      body: JSON.stringify(buildGeminiBody(input))
+    });
+
+    if (!response.ok) {
+      throw new Trend2ShortAIError("API_ERROR", await parseGeminiHttpError(response));
+    }
+
+    const payload = await response.json();
+    const parsed = parseStrictJsonPayload(extractGeminiText(payload));
+
+    return {
+      title: input.topic,
+      hook: parsed.hook,
+      videoIdea: parsed.videoIdea,
+      shortScript: parsed.shortScript,
+      caption: parsed.caption,
+      hashtags: parsed.hashtags,
+      cta: parsed.cta
+    };
+  }
+
   async function generateWithFutureProvider(provider) {
     throw new Trend2ShortAIError("API_ERROR", `${provider} integration is not enabled in this MVP build yet.`);
   }
 
-  async function callProvider(provider, input) {
-    if (provider === "mock") {
-      return createDemoContent(input);
+  async function callProvider(provider, input, apiKey) {
+    if (provider === "gemini") {
+      return generateWithGemini(input, apiKey);
     }
 
-    if (provider === "openai" || provider === "gemini" || provider === "claude" || provider === "openrouter") {
-      return generateWithFutureProvider(provider, input);
+    if (provider === "openai" || provider === "claude" || provider === "openrouter") {
+      return generateWithFutureProvider(provider);
     }
 
     throw new Trend2ShortAIError("API_ERROR", "Unsupported API provider configuration.");
@@ -375,12 +554,20 @@
     };
   }
 
+  function assertWithinDailyLimit() {
+    if (getTodayUsage() >= DAILY_LIMIT) {
+      throw new Trend2ShortAIError("RATE_LIMIT", "Daily AI limit reached.");
+    }
+  }
+
   async function generate(input) {
     const topic = getCleanTopic(input.topic);
 
     if (!topic) {
       throw new Trend2ShortAIError("EMPTY_INPUT", "Empty input.");
     }
+
+    assertWithinDailyLimit();
 
     const normalizedInput = {
       topic,
@@ -407,16 +594,16 @@
     const hasApiKey = Boolean(settings.API_KEY);
 
     let content;
-    let mode = "live";
+    let mode = "Live";
     let message = "";
 
     try {
       if (!hasApiKey) {
-        mode = "demo";
+        mode = "Demo";
         message = "Running in Demo Mode";
         content = createDemoContent(normalizedInput);
       } else {
-        content = await callProvider(settings.API_PROVIDER, normalizedInput);
+        content = await callProvider(settings.API_PROVIDER, normalizedInput, settings.API_KEY);
       }
     } catch (error) {
       if (error instanceof Trend2ShortAIError) {
@@ -435,7 +622,9 @@
 
     return {
       mode,
-      provider: hasApiKey ? settings.API_PROVIDER : "mock",
+      provider: settings.API_PROVIDER || DEFAULT_PROVIDER,
+      providerLabel: settings.API_PROVIDER === "gemini" ? "Gemini" : settings.API_PROVIDER,
+      apiStatus: hasApiKey ? "Ready" : "Missing Key",
       message,
       usageCount,
       content: normalizedContent
@@ -458,9 +647,12 @@
   window.Trend2ShortAIService = {
     ensureReady: getSettings,
     getSettings,
+    getStatus,
     generate,
     createPreviewContent: createDemoContent,
     getTodayUsage,
+    getDailyLimit: () => DAILY_LIMIT,
+    resetDemoData: resetUsageState,
     __debug: {
       setNextError,
       setNextInvalidResponse,

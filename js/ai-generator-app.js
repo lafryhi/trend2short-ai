@@ -18,6 +18,10 @@
   const languageSelect = root.querySelector("#aiLanguage");
   const styleSelect = root.querySelector("#aiStyle");
   const usageCount = root.querySelector("#aiUsageCount");
+  const usageLimit = root.querySelector("#aiUsageLimit");
+  const providerValue = root.querySelector("#aiProviderValue");
+  const modeValue = root.querySelector("#aiModeValue");
+  const apiStatusValue = root.querySelector("#aiApiStatusValue");
   const resultTitle = root.querySelector("#aiResultTitle");
   const resultMeta = root.querySelector("#aiResultMeta");
   const hook = root.querySelector("#aiHook");
@@ -30,6 +34,7 @@
   const loadingState = root.querySelector("#aiLoadingState");
   const errorState = root.querySelector("#aiErrorState");
   const generateButton = root.querySelector("#aiGenerateBtn");
+  const resetDemoDataBtn = root.querySelector("#resetDemoDataBtn");
   const copyButtons = root.querySelectorAll(".ai-copy-btn");
   const toast = document.querySelector("[data-ai-toast]") || document.getElementById("toast");
 
@@ -37,6 +42,16 @@
 
   function updateUsageCounter() {
     usageCount.textContent = String(service.getTodayUsage());
+    if (usageLimit) {
+      usageLimit.textContent = String(service.getDailyLimit());
+    }
+  }
+
+  async function updateStatus(partial = null) {
+    const status = partial || await service.getStatus();
+    providerValue.textContent = status.providerLabel || "Gemini";
+    modeValue.textContent = status.mode || "Demo";
+    apiStatusValue.textContent = status.apiStatus || "Missing Key";
   }
 
   function showToast(message) {
@@ -72,12 +87,19 @@
       EMPTY_INPUT: "Empty Input",
       NETWORK_ERROR: "Network Error",
       API_ERROR: "API Error",
-      INVALID_RESPONSE: "Invalid Response"
+      INVALID_RESPONSE: "Invalid Response",
+      RATE_LIMIT: "Daily AI limit reached."
     };
 
-    const title = labels[code] || "API Error";
+    const fallbackText = detail ? `API Error: ${detail}` : "API Error";
+    const text = code === "RATE_LIMIT"
+      ? labels.RATE_LIMIT
+      : detail
+        ? `${labels[code] || "API Error"}: ${detail}`
+        : (labels[code] || fallbackText);
+
     errorState.hidden = false;
-    errorState.textContent = detail ? `${title}: ${detail}` : title;
+    errorState.textContent = text;
     window.__trend2shortAiTestState = {
       ...(window.__trend2shortAiTestState || {}),
       lastErrorCode: code,
@@ -93,6 +115,9 @@
   function setLoading(isLoading) {
     loadingState.hidden = !isLoading;
     generateButton.disabled = isLoading;
+    if (resetDemoDataBtn) {
+      resetDemoDataBtn.disabled = isLoading;
+    }
   }
 
   function renderContent(content) {
@@ -166,6 +191,11 @@
       renderContent(result.content);
       showModeNotice(result.message);
       updateUsageCounter();
+      await updateStatus({
+        providerLabel: result.providerLabel,
+        mode: result.mode,
+        apiStatus: result.apiStatus
+      });
       window.__trend2shortAiTestState = {
         ...(window.__trend2shortAiTestState || {}),
         lastMode: result.mode,
@@ -175,14 +205,31 @@
     } catch (error) {
       const code = error?.code || "API_ERROR";
       showError(code, error?.message || "");
+      await updateStatus();
     } finally {
       setLoading(false);
     }
   }
 
+  async function handleResetDemoData() {
+    service.resetDemoData();
+    updateUsageCounter();
+    clearError();
+    topicInput.value = "AI tools for teachers";
+    platformSelect.value = "TikTok";
+    languageSelect.value = "English";
+    styleSelect.value = "Educational";
+    renderContent(service.createPreviewContent(getInput()));
+    const status = await service.getStatus();
+    await updateStatus(status);
+    showModeNotice(status.hasApiKey ? "" : "Running in Demo Mode");
+    showToast("Demo data reset.");
+  }
+
   async function initialize() {
     updateUsageCounter();
-    await service.ensureReady();
+    const status = await service.getStatus();
+    await updateStatus(status);
 
     const pendingTrend = window.localStorage.getItem(pendingTrendKey);
     if (pendingTrend) {
@@ -190,16 +237,19 @@
       window.localStorage.removeItem(pendingTrendKey);
     }
 
-    const previewContent = service.createPreviewContent(getInput());
-    renderContent(previewContent);
-
-    const settings = await service.getSettings();
-    if (!settings.API_KEY) {
-      showModeNotice("Running in Demo Mode");
-    }
+    renderContent(service.createPreviewContent(getInput()));
+    showModeNotice(status.hasApiKey ? "" : "Running in Demo Mode");
   }
 
   form.addEventListener("submit", handleSubmit);
+
+  if (resetDemoDataBtn) {
+    resetDemoDataBtn.addEventListener("click", () => {
+      handleResetDemoData().catch((error) => {
+        showError("API_ERROR", error?.message || "Unable to reset demo data.");
+      });
+    });
+  }
 
   copyButtons.forEach((button) => {
     button.addEventListener("click", async () => {
