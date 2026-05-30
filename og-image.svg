@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Trend2Short AI social image</title>
+  <desc id="desc">Trend2Short AI preview showing short video hooks, scripts, captions, and hashtags.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#07162f"/>
+      <stop offset="100%" stop-color="#0d2344"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#173b6a"/>
+      <stop offset="100%" stop-color="#0b203f"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="150" cy="120" r="140" fill="#1f8ef1" opacity="0.14"/>
+  <circle cx="1020" cy="540" r="180" fill="#69c2ff" opacity="0.12"/>
+
+  <g transform="translate(80 90)">
+    <rect x="0" y="0" width="110" height="110" rx="26" fill="#0e2a4f" stroke="#3ea7ff" stroke-width="3"/>
+    <text x="55" y="69" text-anchor="middle" font-family="Segoe UI, Trebuchet MS, sans-serif" font-size="34" font-weight="700" fill="#f4f8ff">T2S</text>
+  </g>
+
+  <g transform="translate(80 245)">
+    <text x="0" y="0" font-family="Segoe UI, Trebuchet MS, sans-serif" font-size="62" font-weight="700" fill="#f4f8ff">Trend2Short AI</text>
+    <text x="0" y="68" font-family="Segoe UI, Trebuchet MS, sans-serif" font-size="34" fill="#c9daf7">Turn Trends Into Short Videos Faster</text>
+    <text x="0" y="128" font-family="Segoe UI, Trebuchet MS, sans-serif" font-size="24" fill="#9fb6d7">Hooks, scripts, captions, hashtags, and CTAs from any trend.</text>
+  </g>
+
+  <g transform="translate(720 118)">
+    <rect x="0" y="0" width="360" height="110" rx="24" fill="url(#card)" stroke="#3ea7ff" stroke-width="2"/>
+    <text x="28" y="44" font-family="Segoe UI, Trebuchet MS, sans-serif" font-size="18" font-weight="700" fill="#69c2ff">Hooks</text>
+    <text x="28" y="77" font-family="Segoe UI, Trebuchet MS, sans-serif" font-size="24" fill="#f4f8ff">Scroll-stopping openers in seconds</text>
+  </g>
+
+  <g transform="translate(790 254)">
+    <rect x="0" y="0" width="290" height="110" rx="24" fill="url(#card)" stroke="#3ea7ff" stroke-width="2"/>
+    <text x="28" y="44" font-family="Segoe UI, Trebuchet MS, sans-serif" font-size="18" font-weight="700" fill="#69c2ff">Scripts</text>
+    <text x="28" y="77" font-family="Segoe UI, Trebuchet MS, sans-serif" font-size="24" fill="#f4f8ff">Ready-to-use short video structure</text>
+  </g>
+
+  <g transform="translate(680 390)">
+    <rect x="0" y="0" width="400" height="110" rx="24" fill="url(#card)" stroke="#3ea7ff" stroke-width="2"/>
+    <text x="28" y="44" font-family="Segoe UI, Trebuchet MS, sans-serif" font-size="18" font-weight="700" fill="#69c2ff">Captions and Hashtags</text>
+    <text x="28" y="77" font-family="Segoe UI, Trebuchet MS, sans-serif" font-size="24" fill="#f4f8ff">Publishing copy for TikTok, Shorts, and Reels</text>
+  </g>
+</svg>
