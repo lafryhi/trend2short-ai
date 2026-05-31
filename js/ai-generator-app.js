@@ -40,6 +40,26 @@
 
   let toastTimeoutId = null;
 
+  function getModeNoticeText(status) {
+    if (!status) {
+      return "Running in Demo Mode";
+    }
+
+    if (status.mode === "Live" && status.apiStatus === "Ready") {
+      return "Gemini Live Mode";
+    }
+
+    if (status.apiStatus === "Missing Key") {
+      return "Running in Demo Mode";
+    }
+
+    if (status.apiStatus === "Connection Error" || status.apiStatus === "API Unavailable") {
+      return "Demo Fallback Active";
+    }
+
+    return "Running in Demo Mode";
+  }
+
   function updateUsageCounter() {
     usageCount.textContent = String(service.getTodayUsage());
     if (usageLimit) {
@@ -88,6 +108,7 @@
       NETWORK_ERROR: "Network Error",
       API_ERROR: "API Error",
       INVALID_RESPONSE: "Invalid Response",
+      API_UNAVAILABLE: "API Unavailable",
       RATE_LIMIT: "Daily AI limit reached."
     };
 
@@ -189,7 +210,7 @@
     try {
       const result = await service.generate(getInput());
       renderContent(result.content);
-      showModeNotice(result.message);
+      showModeNotice(result.message || getModeNoticeText(result));
       updateUsageCounter();
       await updateStatus({
         providerLabel: result.providerLabel,
@@ -238,7 +259,7 @@
     }
 
     renderContent(service.createPreviewContent(getInput()));
-    showModeNotice(status.mode === "Live" ? "Gemini Live Mode" : "Running in Demo Mode");
+    showModeNotice(getModeNoticeText(status));
   }
 
   form.addEventListener("submit", handleSubmit);

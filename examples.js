@@ -493,38 +493,38 @@ function renderExamples() {
       <div class="library-card-header">
         <div>
           <span class="category-badge">${example.category}</span>
-          <h2 class="library-card-title">${example.trend}</h2>
+          <p class="library-card-title">${example.trend}</p>
         </div>
       </div>
       <div class="example-fields">
-        <section class="example-field">
-          <h3>Trend</h3>
+        <div class="example-field">
+          <span class="example-field-label">Trend</span>
           <p>${example.trend}</p>
-        </section>
-        <section class="example-field">
-          <h3>Video Idea</h3>
+        </div>
+        <div class="example-field">
+          <span class="example-field-label">Video Idea</span>
           <p>${example.videoIdea}</p>
-        </section>
-        <section class="example-field">
-          <h3>Hook</h3>
+        </div>
+        <div class="example-field">
+          <span class="example-field-label">Hook</span>
           <p>${example.hook}</p>
-        </section>
-        <section class="example-field">
-          <h3>Short Script</h3>
+        </div>
+        <div class="example-field">
+          <span class="example-field-label">Short Script</span>
           <p>${example.shortScript}</p>
-        </section>
-        <section class="example-field">
-          <h3>Caption</h3>
+        </div>
+        <div class="example-field">
+          <span class="example-field-label">Caption</span>
           <p>${example.caption}</p>
-        </section>
-        <section class="example-field">
-          <h3>Hashtags</h3>
+        </div>
+        <div class="example-field">
+          <span class="example-field-label">Hashtags</span>
           <p>${example.hashtags}</p>
-        </section>
-        <section class="example-field">
-          <h3>CTA</h3>
+        </div>
+        <div class="example-field">
+          <span class="example-field-label">CTA</span>
           <p>${example.cta}</p>
-        </section>
+        </div>
       </div>
       <div class="example-actions">
         <button class="btn btn-secondary btn-compact" type="button" data-action="copy" data-example-id="${example.id}">Copy Example</button>

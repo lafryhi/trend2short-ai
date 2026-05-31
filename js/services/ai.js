@@ -2,6 +2,7 @@
   const USAGE_STORAGE_KEY = "trend2short-ai-usage";
   const DEFAULT_PROVIDER = "gemini";
   const DAILY_LIMIT = 10;
+  const STATUS_API_PATH = "/api/status";
   const DEFAULT_SETTINGS = {
     API_PROVIDER: DEFAULT_PROVIDER,
     USE_LOCAL_API: false
@@ -14,11 +15,12 @@
   };
 
   let configLoadPromise = null;
+  let statusLoadPromise = null;
   let cachedStatus = {
     provider: DEFAULT_PROVIDER,
     providerLabel: "Gemini",
     mode: "Demo",
-    apiStatus: "Missing Key"
+    apiStatus: "Checking"
   };
 
   const styleProfiles = {
@@ -170,7 +172,11 @@
   }
 
   function getTodayKey() {
-    return new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   }
 
   function safeJsonParse(value, fallback) {
@@ -262,7 +268,74 @@
     };
   }
 
-  async function getStatus() {
+  function normalizeProviderLabel(provider) {
+    return String(provider || DEFAULT_PROVIDER)
+      .trim()
+      .replace(/^\w/, (char) => char.toUpperCase());
+  }
+
+  function buildStatusState(provider, mode, apiStatus) {
+    const resolvedProvider = String(provider || DEFAULT_PROVIDER).toLowerCase();
+    return {
+      provider: resolvedProvider,
+      providerLabel: normalizeProviderLabel(resolvedProvider),
+      mode: mode || "Demo",
+      apiStatus: apiStatus || "Checking"
+    };
+  }
+
+  async function requestStatusFromApi(settings) {
+    if (!shouldUseApiRoute(settings)) {
+      return buildStatusState(settings.API_PROVIDER, "Demo", "API Unavailable");
+    }
+
+    let response;
+    try {
+      response = await window.fetch(STATUS_API_PATH, {
+        method: "GET",
+        headers: {
+          Accept: "application/json"
+        }
+      });
+    } catch (error) {
+      return buildStatusState(settings.API_PROVIDER, "Demo", "Connection Error");
+    }
+
+    if (response.status === 404) {
+      return buildStatusState(settings.API_PROVIDER, "Demo", "API Unavailable");
+    }
+
+    if (!response.ok) {
+      return buildStatusState(settings.API_PROVIDER, "Demo", "Connection Error");
+    }
+
+    const payload = await response.json().catch(() => null);
+    if (!payload || typeof payload !== "object") {
+      return buildStatusState(settings.API_PROVIDER, "Demo", "Connection Error");
+    }
+
+    return buildStatusState(payload.provider || settings.API_PROVIDER, payload.mode, payload.apiStatus);
+  }
+
+  async function getStatus(options = {}) {
+    const settings = await getSettings();
+
+    if (!options.forceRefresh && cachedStatus.apiStatus !== "Checking") {
+      return { ...cachedStatus };
+    }
+
+    if (!statusLoadPromise || options.forceRefresh) {
+      statusLoadPromise = requestStatusFromApi(settings)
+        .then((nextStatus) => {
+          setStatus(nextStatus);
+          return nextStatus;
+        })
+        .finally(() => {
+          statusLoadPromise = null;
+        });
+    }
+
+    await statusLoadPromise;
     return { ...cachedStatus };
   }
 
@@ -405,27 +478,32 @@
 
   async function callApiRoute(input, settings) {
     if (!shouldUseApiRoute(settings)) {
-      throw new Trend2ShortAIError("NETWORK_ERROR", "Local API route disabled.");
+      throw new Trend2ShortAIError("API_UNAVAILABLE", "Local API route disabled.");
     }
 
-    const response = await window.fetch("/api/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        trend: input.topic,
-        platform: input.platform,
-        language: input.language,
-        style: input.style
-      })
-    });
+    let response;
+    try {
+      response = await window.fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          trend: input.topic,
+          platform: input.platform,
+          language: input.language,
+          style: input.style
+        })
+      });
+    } catch (error) {
+      throw new Trend2ShortAIError("NETWORK_ERROR", "Network request failed.");
+    }
 
     const payload = await response.json().catch(() => null);
 
     if (!response.ok) {
       if (response.status === 404) {
-        throw new Trend2ShortAIError("NETWORK_ERROR", "API route unavailable.");
+        throw new Trend2ShortAIError("API_UNAVAILABLE", "API route unavailable.");
       }
 
       const message = payload?.message || `Request failed with status ${response.status}.`;
@@ -472,17 +550,17 @@
       throw new Trend2ShortAIError("API_ERROR", "The AI provider returned an API error.");
     }
 
-    const settings = await getSettings();
-    let content = null;
-    let mode = "Demo";
-    let message = "Running in Demo Mode";
-    let apiStatus = "Missing Key";
+      const settings = await getSettings();
+      let content = null;
+      let mode = "Demo";
+      let message = "Running in Demo Mode";
+      let apiStatus = "Missing Key";
 
-    try {
-      const apiPayload = await callApiRoute(normalizedInput, settings);
+      try {
+        const apiPayload = await callApiRoute(normalizedInput, settings);
 
-      if (apiPayload?.demoMode) {
-        content = createDemoContent(normalizedInput);
+        if (apiPayload?.demoMode) {
+          content = createDemoContent(normalizedInput);
         mode = "Demo";
         message = apiPayload.message || "Running in Demo Mode";
         apiStatus = apiPayload.apiStatus || "Missing Key";
@@ -491,21 +569,29 @@
         mode = apiPayload?.mode || "Live";
         message = apiPayload?.message || "Gemini Live Mode";
         apiStatus = apiPayload?.apiStatus || "Ready";
+        }
+      } catch (error) {
+        if (error instanceof Trend2ShortAIError && error.code === "NETWORK_ERROR") {
+          content = createDemoContent(normalizedInput);
+          mode = "Demo";
+          message = "Demo Fallback Active";
+          apiStatus = "Connection Error";
+        } else if (error instanceof Trend2ShortAIError && error.code === "API_UNAVAILABLE") {
+          content = createDemoContent(normalizedInput);
+          mode = "Demo";
+          message = "Demo Fallback Active";
+          apiStatus = "API Unavailable";
+        } else if (error instanceof Trend2ShortAIError && error.code === "INVALID_RESPONSE") {
+          throw error;
+        } else if (error instanceof Trend2ShortAIError && error.code === "API_ERROR") {
+          throw error;
+        } else {
+          content = createDemoContent(normalizedInput);
+          mode = "Demo";
+          message = "Demo Fallback Active";
+          apiStatus = "Connection Error";
+        }
       }
-    } catch (error) {
-      if (error instanceof Trend2ShortAIError && error.code === "INVALID_RESPONSE") {
-        throw error;
-      }
-
-      if (error instanceof Trend2ShortAIError && error.code === "API_ERROR") {
-        throw error;
-      }
-
-      content = createDemoContent(normalizedInput);
-      mode = "Demo";
-      message = "Running in Demo Mode";
-      apiStatus = "Missing Key";
-    }
 
     if (nextInvalidResponse) {
       content = {};
@@ -546,9 +632,9 @@
   }
 
   window.Trend2ShortAIService = {
-    ensureReady: getSettings,
-    getSettings,
-    getStatus,
+      ensureReady: getSettings,
+      getSettings,
+      getStatus,
     generate,
     createPreviewContent: createDemoContent,
     getTodayUsage,

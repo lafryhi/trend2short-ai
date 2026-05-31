@@ -9,8 +9,26 @@
   <meta name="author" content="Trend2Short AI">
   <meta name="theme-color" content="#07162f">
   <link rel="canonical" href="https://trend2short-ai.vercel.app/setup.html">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://trend2short-ai.vercel.app/setup.html">
+  <meta property="og:title" content="Setup | Trend2Short AI">
+  <meta property="og:description" content="Learn how to configure the Gemini API key for Trend2Short AI and understand Demo Mode versus Live Mode.">
+  <meta property="og:image" content="https://trend2short-ai.vercel.app/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Setup | Trend2Short AI">
+  <meta name="twitter:description" content="Learn how to configure the Gemini API key for Trend2Short AI and understand Demo Mode versus Live Mode.">
+  <meta name="twitter:image" content="https://trend2short-ai.vercel.app/og-image.svg">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="stylesheet" href="style.css">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Setup | Trend2Short AI",
+      "description": "Learn how to configure the Gemini API key for Trend2Short AI and understand Demo Mode versus Live Mode.",
+      "url": "https://trend2short-ai.vercel.app/setup.html"
+    }
+  </script>
 </head>
 <body class="legal-page">
   <div class="page-shell">
@@ -21,11 +39,11 @@
       </div>
       <nav class="simple-nav" aria-label="Setup navigation">
         <a href="index.html">Home</a>
-        <a href="blog/">Blog</a>
         <a href="examples.html">Examples</a>
         <a href="ai-generator.html">AI Generator</a>
-        <a href="setup.html">Setup</a>
+        <a href="blog/">Blog</a>
         <a href="roadmap.html">Roadmap</a>
+        <a href="setup.html">Setup</a>
       </nav>
     </header>
 
@@ -34,8 +52,8 @@
         <span class="eyebrow">Setup</span>
         <h1>Connect Gemini safely, or keep using Demo Mode locally.</h1>
         <p>
-          Trend2Short AI works without any backend. You can keep the product in Demo Mode with no API key,
-          or switch to Live Mode by adding a Gemini API key to the local config file on your machine only.
+          Gemini API Key must never be placed in frontend files. The key must be stored only in Vercel
+          Environment Variables as <strong>GEMINI_API_KEY</strong>.
         </p>
       </section>
 
@@ -52,23 +70,25 @@
         </article>
 
         <article class="card roadmap-card">
-          <h2>2. Place The Key In Vercel</h2>
+          <h2>2. Store The Key Securely In Vercel</h2>
           <p>
-            Do <strong>not</strong> put the Gemini key in <strong>config.js</strong>.
+            Gemini API Key must never be placed in frontend files, including <strong>config.js</strong> or any browser-served script.
           </p>
           <p>
-            The key belongs in Vercel only:
+            Use the secure path below:
           </p>
-          <pre><code>Project Settings
+          <pre><code>Vercel
+Project Settings
 Environment Variables
-GEMINI_API_KEY</code></pre>
+GEMINI_API_KEY
+Redeploy</code></pre>
           <p>
-            After adding the variable, redeploy the project. Keep <strong>config.js</strong> for non-secret frontend settings only.
+            After adding the variable, redeploy the project so the serverless function can read it safely.
           </p>
         </article>
 
         <article class="card roadmap-card">
-          <h3>Demo Mode</h3>
+          <h3>3. Demo Mode</h3>
           <p>
             If <strong>GEMINI_API_KEY</strong> is missing in Vercel, the serverless function reports Demo Mode and
             the frontend uses the local browser-based generator as a fallback.
@@ -76,7 +96,7 @@ GEMINI_API_KEY</code></pre>
         </article>
 
         <article class="card roadmap-card">
-          <h3>Live Mode</h3>
+          <h3>4. Live Mode</h3>
           <p>
             If <strong>GEMINI_API_KEY</strong> is present in Vercel, Trend2Short AI sends requests to
             <strong>/api/generate</strong>, and the serverless function calls <strong>Gemini 2.5 Flash</strong>
@@ -86,7 +106,7 @@ GEMINI_API_KEY</code></pre>
         </article>
 
         <article class="card roadmap-card">
-          <h3>Provider Architecture</h3>
+          <h3>5. Provider Architecture</h3>
           <p>
             Gemini is the first provider only. The service layer in <strong>js/services/ai.js</strong> is organized
             so future providers such as OpenAI, Claude, and OpenRouter can be added without rewriting the UI.
@@ -94,7 +114,7 @@ GEMINI_API_KEY</code></pre>
         </article>
 
         <article class="card roadmap-card">
-          <h3>Rate Limit</h3>
+          <h3>6. Rate Limit</h3>
           <p>
             The MVP enforces a local daily limit of <strong>10 AI generations</strong> using LocalStorage.
             This keeps the front-end flow predictable while the product remains browser-only.
@@ -105,12 +125,6 @@ GEMINI_API_KEY</code></pre>
 
     <footer class="footer">
       <nav class="footer-nav" aria-label="Footer links">
-        <a href="index.html">Home</a>
-        <a href="blog/">Blog</a>
-        <a href="examples.html">Examples</a>
-        <a href="ai-generator.html">AI Generator</a>
-        <a href="setup.html">Setup</a>
-        <a href="roadmap.html">Roadmap</a>
         <a href="about.html">About</a>
         <a href="contact.html">Contact</a>
         <a href="privacy-policy.html">Privacy Policy</a>

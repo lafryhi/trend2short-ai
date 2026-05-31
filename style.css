@@ -1005,6 +1005,11 @@ select {
   padding: 24px;
 }
 
+.page-intro-card h2 {
+  margin: 0 0 12px;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
 .page-intro-card p {
   margin: 0;
   color: var(--muted);
@@ -1132,6 +1137,8 @@ select {
 .library-card-title {
   margin: 10px 0 0;
   font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .example-fields {
@@ -1146,9 +1153,12 @@ select {
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.example-field h3 {
-  margin: 0 0 8px;
-  font-size: 0.98rem;
+.example-field-label {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #dff1ff;
+  font-size: 0.92rem;
+  font-weight: 700;
 }
 
 .example-field p {
@@ -1156,6 +1166,36 @@ select {
   color: var(--muted);
   line-height: 1.7;
   white-space: pre-line;
+}
+
+.not-found-main {
+  padding: 52px 0 64px;
+}
+
+.not-found-card {
+  display: grid;
+  gap: 20px;
+  padding: 32px;
+  text-align: center;
+}
+
+.not-found-card h1 {
+  margin: 0;
+  font-size: clamp(2.4rem, 5vw, 4rem);
+}
+
+.not-found-card p {
+  margin: 0 auto;
+  max-width: 60ch;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.not-found-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
 }
 
 .example-actions {
