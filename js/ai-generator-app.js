@@ -26,6 +26,7 @@
   const resultMeta = root.querySelector("#aiResultMeta");
   const hook = root.querySelector("#aiHook");
   const videoIdea = root.querySelector("#aiVideoIdea");
+  const audience = root.querySelector("#aiAudience");
   const shortScript = root.querySelector("#aiShortScript");
   const caption = root.querySelector("#aiCaption");
   const hashtags = root.querySelector("#aiHashtags");
@@ -146,6 +147,9 @@
     resultMeta.textContent = content.meta;
     hook.textContent = content.hook;
     videoIdea.textContent = content.videoIdea;
+    if (audience) {
+      audience.textContent = content.audience || "";
+    }
     shortScript.textContent = content.shortScript;
     caption.textContent = content.caption;
     hashtags.textContent = content.hashtags;

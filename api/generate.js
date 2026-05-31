@@ -9,6 +9,17 @@ class ApiError extends Error {
   }
 }
 
+const BANNED_INSTRUCTION_PATTERNS = [
+  /\bStart with\b/i,
+  /\bBegin by\b/i,
+  /\bThen explain\b/i,
+  /(^|\n)\s*Commence par\b/i,
+  /(^|\n)\s*Puis\b/i,
+  /(^|\n)\s*Termine\b/i,
+  /(^|\n)\s*ابدأ\b/i,
+  /(^|\n)\s*ثم\b/i
+];
+
 function sendJson(res, status, payload) {
   if (typeof res.status === "function" && typeof res.json === "function") {
     return res.status(status).json(payload);
@@ -46,204 +57,371 @@ function getCleanTopic(rawTopic) {
   return String(rawTopic || "").trim();
 }
 
-function buildKeyword(topic) {
-  return topic
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, "")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 3)
-    .join("");
-}
-
-function getArticle(word) {
-  return /^[aeiou]/i.test(word) ? "an" : "a";
-}
-
 function buildMeta(platform, language, style) {
   return `${platform} | ${language} | ${style}`;
 }
 
-const styleProfiles = {
-  Educational: {
-    English: {
-      label: "educational",
-      angle: "break the topic into a quick lesson with practical takeaways",
-      tone: "clear and useful",
-      promise: "teach something practical in under 30 seconds"
-    },
-    Arabic: {
-      label: "تعليمي",
-      angle: "قسم الموضوع إلى شرح سريع مع نقاط عملية واضحة",
-      tone: "واضح ومفيد",
-      promise: "تقديم فائدة عملية في أقل من 30 ثانية"
-    },
-    French: {
-      label: "educatif",
-      angle: "decomposer le sujet en mini lecon avec conseils utiles",
-      tone: "clair et utile",
-      promise: "apporter une valeur concrete en moins de 30 secondes"
-    }
-  },
-  Viral: {
-    English: {
-      label: "viral",
-      angle: "frame the topic around surprise, momentum, and instant curiosity",
-      tone: "high-energy and punchy",
-      promise: "grab attention before the swipe"
-    },
-    Arabic: {
-      label: "فيروسي",
-      angle: "ابن الفكرة على المفاجأة والفضول والإيقاع السريع",
-      tone: "سريع وجذاب",
-      promise: "خطف الانتباه قبل تجاوز الفيديو"
-    },
-    French: {
-      label: "viral",
-      angle: "presenter le sujet avec surprise, rythme et curiosite immediate",
-      tone: "energique et percutant",
-      promise: "capturer l'attention avant le swipe"
-    }
-  },
-  Storytelling: {
-    English: {
-      label: "storytelling",
-      angle: "turn the topic into a short narrative with setup, shift, and payoff",
-      tone: "personal and cinematic",
-      promise: "make the viewer stay until the ending"
-    },
-    Arabic: {
-      label: "قصصي",
-      angle: "حول الموضوع إلى قصة قصيرة فيها بداية وتحول ونهاية",
-      tone: "شخصي وسلس",
-      promise: "جعل المشاهد ينتظر النهاية"
-    },
-    French: {
-      label: "storytelling",
-      angle: "transformer le sujet en mini histoire avec contexte, bascule et conclusion",
-      tone: "personnel et narratif",
-      promise: "garder le spectateur jusqu'a la fin"
-    }
-  },
-  Professional: {
-    English: {
-      label: "professional",
-      angle: "position the topic with authority, insight, and a polished structure",
-      tone: "confident and sharp",
-      promise: "deliver concise expert value"
-    },
-    Arabic: {
-      label: "احترافي",
-      angle: "قدم الموضوع بصياغة موثوقة ومنظمة ونبرة خبيرة",
-      tone: "احترافي وواثق",
-      promise: "تقديم قيمة مختصرة بلمسة خبيرة"
-    },
-    French: {
-      label: "professionnel",
-      angle: "positionner le sujet avec autorite, structure et clarte",
-      tone: "precis et credible",
-      promise: "offrir une valeur d'expert concise"
-    }
-  }
-};
+function getTopicWords(topic) {
+  return topic
+    .normalize("NFKD")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+}
 
-const platformProfiles = {
-  TikTok: {
-    English: "fast cuts, bold phrasing, and a direct opening",
-    Arabic: "لقطات سريعة وبداية مباشرة وصياغة جريئة",
-    French: "des coupes rapides, une accroche directe et un ton percutant"
-  },
-  "YouTube Shorts": {
-    English: "search-friendly phrasing with clear value delivery",
-    Arabic: "صياغة واضحة وسهلة الفهم مع قيمة مباشرة",
-    French: "une formulation claire avec une promesse de valeur immediate"
-  },
-  "Instagram Reels": {
-    English: "clean lifestyle framing with shareable social energy",
-    Arabic: "عرض بصري أنيق وروح اجتماعية قابلة للمشاركة",
-    French: "un angle visuel propre avec une energie sociale facile a partager"
-  }
-};
+function toCamelTag(words, maxWords = 3) {
+  return words
+    .slice(0, maxWords)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join("");
+}
 
-const languageProfiles = {
-  English: {
-    hooks: [
-      "Most creators are still missing this angle on {topic}.",
-      "If you're posting about {topic}, start with this instead.",
-      "This {topic} shortcut can change your next short video."
-    ],
-    scriptIntro: "Open with a bold statement about",
-    scriptMiddle: "Then",
-    scriptOutro: "Close with one practical insight and ask viewers to save the video for later.",
-    captionStart: "Quick breakdown:",
-    cta: "Try Trend2Short AI and turn your next trend into a publish-ready short."
-  },
-  Arabic: {
-    hooks: [
-      "أغلب صناع المحتوى لم يستغلوا هذا الجانب من {topic} بعد.",
-      "إذا كنت تنشر عن {topic} فابدأ بهذه الزاوية.",
-      "هذه الفكرة حول {topic} قد تصنع فرقًا في الفيديو القادم."
-    ],
-    scriptIntro: "ابدأ بجملة قوية عن",
-    scriptMiddle: "ثم",
-    scriptOutro: "اختم بنصيحة واضحة وادع المشاهد لحفظ الفيديو والعودة إليه لاحقًا.",
-    captionStart: "ملخص سريع:",
-    cta: "جرّب Trend2Short AI وحوّل الترند القادم إلى فيديو قصير جاهز."
-  },
-  French: {
-    hooks: [
-      "La plupart des createurs passent encore a cote de cet angle sur {topic}.",
-      "Si tu publies sur {topic}, commence plutot comme ca.",
-      "Cette approche autour de {topic} peut booster ta prochaine video courte."
-    ],
-    scriptIntro: "Commence par une phrase forte sur",
-    scriptMiddle: "Puis",
-    scriptOutro: "Termine avec un conseil simple et invite les spectateurs a sauvegarder la video.",
-    captionStart: "Resume rapide :",
-    cta: "Essaie Trend2Short AI et genere ton prochain short plus vite."
-  }
-};
+function getPlatformTag(platform) {
+  const map = {
+    TikTok: "#TikTok",
+    "YouTube Shorts": "#YouTubeShorts",
+    "Instagram Reels": "#InstagramReels"
+  };
 
-function pickHook(language, topic) {
-  const hooks = languageProfiles[language].hooks;
-  return hooks[topic.length % hooks.length].replace("{topic}", topic);
+  return map[platform] || "#ShortVideo";
+}
+
+function getStyleTag(style) {
+  const map = {
+    Educational: "#EducationalContent",
+    Viral: "#TrendingNow",
+    Storytelling: "#Storytelling",
+    Professional: "#ProfessionalInsights"
+  };
+
+  return map[style] || "#CreatorContent";
+}
+
+function getTopicPreset(topic) {
+  const value = topic.toLowerCase();
+
+  if (/(teacher|teachers|enseignant|enseignants|professeur|professeurs|معلم|معلمين|أستاذ|أساتذة|مدرس)/i.test(value)) {
+    return "teachers";
+  }
+
+  if (/(starlink|morocco|maroc|المغرب)/i.test(value)) {
+    return "starlink-morocco";
+  }
+
+  if (/(student|students|étudiant|étudiants|etudiant|etudiants|طالب|طلاب|save money)/i.test(value)) {
+    return "student-money";
+  }
+
+  return "general";
+}
+
+function buildFallbackHashtags(topic, platform, style, language, presetTags = []) {
+  const topicWords = getTopicWords(topic);
+  const tags = [...presetTags];
+
+  if (language === "Arabic") {
+    if (topicWords.length > 0) {
+      tags.push(`#${topicWords[0]}`);
+    }
+    if (topicWords.length > 1) {
+      tags.push(`#${topicWords[1]}`);
+    }
+    tags.push(
+      style === "Educational" ? "#محتوى_تعليمي" : null,
+      style === "Professional" ? "#تحليل_مهني" : null,
+      style === "Storytelling" ? "#قصة_قصيرة" : null,
+      style === "Viral" ? "#ترند_اليوم" : null,
+      platform === "TikTok" ? "#تيك_توك" : null,
+      platform === "YouTube Shorts" ? "#يوتيوب_شورتس" : null,
+      platform === "Instagram Reels" ? "#ريلز" : null,
+      "#صناع_المحتوى"
+    );
+  } else {
+    if (topicWords.length > 0) {
+      tags.push(`#${toCamelTag(topicWords, Math.min(topicWords.length, 3))}`);
+    }
+    if (topicWords.length > 1) {
+      tags.push(`#${toCamelTag(topicWords.slice(0, 2), 2)}`);
+    }
+    tags.push(getPlatformTag(platform), getStyleTag(style), "#ContentCreation");
+  }
+
+  const unique = [...new Set(tags.filter(Boolean))];
+  return unique.slice(0, 8).join(" ");
+}
+
+function countWords(text) {
+  return String(text || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+}
+
+function hasInstructionalLanguage(text) {
+  return BANNED_INSTRUCTION_PATTERNS.some((pattern) => pattern.test(String(text || "")));
+}
+
+function normalizeHashtagString(value, fallback) {
+  const matches = String(value || "").match(/#[^\s#]+/g) || [];
+  const unique = [...new Set(matches)];
+  const valid = unique.filter((tag) => tag.length > 2 && !/^#(?:ai|for|and)$/i.test(tag));
+
+  if (valid.length < 5 || valid.length > 8) {
+    return fallback;
+  }
+
+  return valid.slice(0, 8).join(" ");
+}
+
+function isWeakField(field, value) {
+  const text = String(value || "").trim();
+  if (!text) {
+    return true;
+  }
+
+  if (hasInstructionalLanguage(text)) {
+    return true;
+  }
+
+  if (field === "hook") {
+    return countWords(text) < 6;
+  }
+
+  if (field === "videoIdea") {
+    return countWords(text) < 10;
+  }
+
+  if (field === "shortScript") {
+    const words = countWords(text);
+    return words < 60 || words > 130;
+  }
+
+  if (field === "caption") {
+    return countWords(text) < 10;
+  }
+
+  if (field === "cta") {
+    return countWords(text) < 4;
+  }
+
+  if (field === "audience") {
+    return countWords(text) < 2;
+  }
+
+  return false;
+}
+
+function buildGeneralContent(input) {
+  const topic = input.trend;
+  const topicWords = getTopicWords(topic);
+  const primaryKeyword = topicWords[0] || topic;
+  const secondaryKeyword = topicWords[1] || "the trend";
+
+  if (input.language === "French") {
+    const hookByStyle = {
+      Educational: `${topic} devient plus utile quand on le relie à des exemples concrets et à un vrai résultat.`,
+      Viral: `${topic} fait parler aujourd’hui, mais l’angle vraiment utile est souvent beaucoup plus précis.`,
+      Storytelling: `${topic} paraît parfois abstrait, jusqu’au moment où on voit son impact dans la vie réelle.`,
+      Professional: `${topic} mérite de l’attention parce qu’il influence déjà le coût, la vitesse et les décisions.`
+    };
+
+    return {
+      title: topic,
+      meta: buildMeta(input.platform, input.language, input.style),
+      hook: hookByStyle[input.style] || hookByStyle.Educational,
+      videoIdea: `Une courte vidéo ${input.style.toLowerCase()} qui explique ${topic} avec un angle clair, des exemples concrets et une conclusion facile à retenir.`,
+      shortScript: `Aujourd’hui, on parle de ${topic} sans rester dans le vague. Le plus intéressant, ce n’est pas seulement la tendance elle-même, mais ce qu’elle change concrètement pour les personnes concernées. Il faut regarder l’impact réel sur le temps, le coût ou la façon de travailler, puis donner un exemple simple qui rend le sujet immédiatement compréhensible. Avec cet angle, ${primaryKeyword} devient plus clair, plus crédible et surtout plus utile pour une vidéo courte que l’on peut regarder, comprendre et partager rapidement.`,
+      caption: `Si ${topic} revient souvent dans votre fil, cet angle permet d’en parler de façon claire sans tomber dans une explication trop générale.`,
+      hashtags: buildFallbackHashtags(topic, input.platform, input.style, input.language, ["#Tendance", "#IdéeVidéo"]),
+      cta: input.platform === "TikTok"
+        ? "Sauvegarde cette vidéo pour réutiliser cet angle plus tard."
+        : input.platform === "Instagram Reels"
+          ? "Enregistre ce Reel si tu veux plus d’idées prêtes à publier."
+          : "Abonne-toi pour d’autres idées de Shorts prêtes à tourner.",
+      audience: `Créateurs et professionnels qui suivent ${topic}`
+    };
+  }
+
+  if (input.language === "Arabic") {
+    const hookByStyle = {
+      Educational: `فهم ${topic} يصبح أسهل عندما نربطه بأمثلة عملية ونتائج واضحة.`,
+      Viral: `${topic} يتكرر كثيرًا الآن، لكن الزاوية المفيدة فيه أدق بكثير من مجرد تكرار اسم الترند.`,
+      Storytelling: `${topic} قد يبدو موضوعًا بعيدًا، إلى أن ترى أثره الحقيقي في الحياة اليومية.`,
+      Professional: `${topic} يستحق المتابعة لأنه يؤثر فعليًا في التكلفة والسرعة وطريقة اتخاذ القرار.`
+    };
+
+    return {
+      title: topic,
+      meta: buildMeta(input.platform, input.language, input.style),
+      hook: hookByStyle[input.style] || hookByStyle.Educational,
+      videoIdea: `فيديو قصير بأسلوب ${input.style === "Educational" ? "تعليمي" : input.style === "Professional" ? "مهني" : input.style === "Storytelling" ? "قصصي" : "سريع"} يشرح ${topic} من زاوية واضحة وأمثلة قريبة من الواقع.`,
+      shortScript: `اليوم نتحدث عن ${topic} بطريقة عملية ومباشرة. المهم هنا ليس تكرار اسم الترند، بل فهم ما الذي يغيّره فعلًا على أرض الواقع. عندما نربط الموضوع بالتكلفة أو الوقت أو سهولة الوصول، يصبح أوضح وأقرب للمشاهد. ثم نضيف مثالًا بسيطًا يشرح الفكرة بسرعة، ونختم بالنقطة التي يجب الانتباه لها إذا استمر هذا الاتجاه في النمو. بهذه الطريقة، يتحول ${primaryKeyword} من عنوان عام إلى محتوى قصير واضح ويمكن تذكره بسهولة بعد مشاهدة الفيديو.`,
+      caption: `إذا كان ${topic} يظهر كثيرًا في المحتوى هذه الأيام، فهذه زاوية أوضح وأسهل لشرحه دون كلام عام أو مكرر.`,
+      hashtags: buildFallbackHashtags(topic, input.platform, input.style, input.language, ["#ترند", "#فكرة_فيديو"]),
+      cta: input.platform === "TikTok"
+        ? "احفظ هذا الفيديو إذا أردت العودة إلى هذه الفكرة لاحقًا."
+        : input.platform === "Instagram Reels"
+          ? "احفظ هذا الريل إذا كنت تريد أفكارًا أكثر جاهزة للنشر."
+          : "اشترك لمزيد من أفكار Shorts القصيرة والواضحة.",
+      audience: `صناع المحتوى والمهتمون بموضوع ${topic}`
+    };
+  }
+
+  const hookByStyle = {
+    Educational: `${topic} makes more sense when you connect it to clear examples and real outcomes.`,
+    Viral: `${topic} is trending right now, but the useful angle is more specific than most people think.`,
+    Storytelling: `${topic} feels abstract until you see how it changes daily life.`,
+    Professional: `${topic} matters because it already affects cost, speed, and decision-making.`
+  };
+
+  return {
+    title: topic,
+    meta: buildMeta(input.platform, input.language, input.style),
+    hook: hookByStyle[input.style] || hookByStyle.Educational,
+    videoIdea: `A short ${input.style.toLowerCase()} video that explains ${topic} through a concrete angle, clear examples, and one takeaway worth remembering.`,
+    shortScript: `Today, let’s talk about ${topic} without sounding vague. What matters most is not repeating the trend name, but showing what it changes in real life. That usually means looking at time, cost, access, or the way people work and make decisions. Once you add one concrete example, the topic becomes much easier to understand. That is what makes a strong short video: not hype, but a clear angle that helps the viewer see why ${secondaryKeyword} matters right now and what they should pay attention to next.`,
+    caption: `If ${topic} keeps showing up in your feed, this angle makes it easier to explain without sounding generic or repetitive.`,
+    hashtags: buildFallbackHashtags(topic, input.platform, input.style, input.language, ["#TrendAlert", "#VideoIdeas"]),
+    cta: input.platform === "TikTok"
+      ? "Save this video if you want more trend angles like this."
+      : input.platform === "Instagram Reels"
+        ? "Follow for more short-form content ideas you can actually post."
+        : "Subscribe for more Shorts ideas built from real trends.",
+    audience: `Creators and professionals following ${topic}`
+  };
 }
 
 function createDemoContent(input) {
   const topic = getCleanTopic(input.trend);
-  const platform = input.platform;
-  const language = input.language;
-  const style = input.style;
+  const preset = getTopicPreset(topic);
 
-  const styleProfile = styleProfiles[style][language];
-  const platformProfile = platformProfiles[platform][language];
-  const languageProfile = languageProfiles[language];
-  const keyword = buildKeyword(topic) || "trend";
+  if (preset === "teachers") {
+    if (input.language === "French") {
+      return {
+        title: topic,
+        meta: buildMeta(input.platform, input.language, input.style),
+        hook: "Trois outils d’IA peuvent aider les enseignants à préparer leurs cours en deux fois moins de temps.",
+        videoIdea: "Une courte vidéo qui montre comment MagicSchool, Canva et Quizizz AI peuvent alléger la préparation des cours.",
+        shortScript: "Aujourd’hui, voici trois outils d’IA que les enseignants peuvent utiliser pour gagner du temps. MagicSchool aide à structurer un plan de cours en quelques minutes. Canva peut transformer une idée en support visuel clair pour la classe. Quizizz AI permet de créer rapidement des questions et des révisions. Le but n’est pas de remplacer l’enseignant, mais de réduire les tâches répétitives pour consacrer plus de temps aux élèves et à l’accompagnement pédagogique.",
+        caption: "Ces outils d’IA peuvent vraiment alléger la préparation des cours sans compliquer le travail des enseignants.",
+        hashtags: "#OutilsIA #Enseignants #EdTech #PreparationDeCours #Professeurs #TikTokEducatif",
+        cta: "Sauvegarde cette vidéo pour tester ces outils plus tard.",
+        audience: "Enseignants et créateurs de contenu éducatif"
+      };
+    }
 
-  let videoIdea = "";
-  let caption = "";
+    if (input.language === "Arabic") {
+      return {
+        title: topic,
+        meta: buildMeta(input.platform, input.language, input.style),
+        hook: "ثلاث أدوات ذكاء اصطناعي يمكن أن تساعد المعلمين على تحضير الدروس في وقت أقل بكثير.",
+        videoIdea: "فيديو قصير يوضح كيف يمكن للمعلمين استخدام MagicSchool وCanva وQuizizz AI لتخفيف وقت التحضير.",
+        shortScript: "اليوم لدينا ثلاث أدوات ذكاء اصطناعي يمكن أن تساعد المعلمين بشكل عملي. أداة MagicSchool تساعد في بناء خطة درس أو نشاط صفّي بسرعة. Canva تجعل تحويل الفكرة إلى عرض بصري أو ورقة عمل أسهل بكثير. أما Quizizz AI فيمكنه تسريع إعداد الأسئلة والمراجعات للطلاب. الفكرة ليست استبدال المعلم، بل تقليل الوقت الضائع في المهام المتكررة حتى يبقى وقت أكبر للشرح والمتابعة ودعم الطلاب داخل الفصل.",
+        caption: "إذا كان تحضير الدروس يستهلك وقتك كل أسبوع، فهذه الأدوات قد تجعل العملية أخف وأكثر سرعة.",
+        hashtags: "#أدوات_الذكاء_الاصطناعي #المعلمون #تقنية_التعليم #تحضير_الدروس #أدوات_الفصل #تيك_توك",
+        cta: "احفظ هذا الفيديو وجرّب أداة واحدة قبل حصتك القادمة.",
+        audience: "المعلمون وصناع المحتوى التعليمي"
+      };
+    }
 
-  if (language === "Arabic") {
-    videoIdea = `أنشئ فيديو ${styleProfile.label} لمنصة ${platform} حول ${topic} يعتمد على ${platformProfile} بهدف ${styleProfile.promise}.`;
-    caption = `${languageProfile.captionStart} ${topic} بصياغة ${styleProfile.label} مخصصة لـ ${platform}. أسلوب ${styleProfile.tone} مع قيمة سريعة ودعوة واضحة للتفاعل.`;
-  } else if (language === "French") {
-    videoIdea = `Cree une video courte ${styleProfile.label} pour ${platform} sur ${topic}, en utilisant ${platformProfile} afin de ${styleProfile.promise}.`;
-    caption = `${languageProfile.captionStart} ${topic} traite dans un style ${styleProfile.label} pour ${platform}. Un rendu ${styleProfile.tone}, rapide et facile a publier.`;
-  } else {
-    videoIdea = `Create ${getArticle(styleProfile.label)} ${styleProfile.label} short for ${platform} about ${topic} that uses ${platformProfile} to ${styleProfile.promise}.`;
-    caption = `${languageProfile.captionStart} ${topic} explained in a ${styleProfile.label} format for ${platform}. ${styleProfile.tone} delivery, fast value, and a clean CTA.`;
+    return {
+      title: topic,
+      meta: buildMeta(input.platform, input.language, input.style),
+      hook: "Three AI tools can help teachers plan lessons and classroom content in half the time.",
+      videoIdea: "A short video showing how teachers can use MagicSchool, Canva, and Quizizz AI to prepare faster.",
+      shortScript: "Today, here are three AI tools that can genuinely help teachers save time. MagicSchool can draft lesson outlines and classroom prompts in minutes. Canva helps turn a rough idea into clear slides or worksheets without starting from scratch. Quizizz AI can quickly build quizzes and revision questions for the class. The goal is not to replace the teacher. It is to cut repetitive prep work so more time goes into teaching, feedback, and supporting students.",
+      caption: "If lesson prep is eating up your week, these tools can make the workload much lighter without overcomplicating your workflow.",
+      hashtags: "#AIToolsForTeachers #EdTech #TeacherTips #LessonPlanning #ClassroomTools #TikTokEducation",
+      cta: "Save this video and test one of these tools before your next class.",
+      audience: "Teachers and educational content creators"
+    };
   }
 
-  return {
-    title: topic,
-    meta: buildMeta(platform, language, style),
-    hook: pickHook(language, topic),
-    videoIdea,
-    shortScript: `${languageProfile.scriptIntro} ${topic}.\n${languageProfile.scriptMiddle} ${styleProfile.angle}.\n${languageProfile.scriptOutro}`,
-    caption,
-    hashtags: `#${keyword} #shortvideo #contentcreator #${platform.replace(/\s+/g, "").toLowerCase()} #${style.toLowerCase()} #trend2short`,
-    cta: languageProfile.cta
-  };
+  if (preset === "starlink-morocco") {
+    if (input.language === "French") {
+      return {
+        title: topic,
+        meta: buildMeta(input.platform, input.language, input.style),
+        hook: "Starlink pourrait améliorer l’accès à Internet au Maroc, mais le prix et le cadre réglementaire restent décisifs.",
+        videoIdea: "Une courte vidéo qui explique ce que Starlink pourrait changer au Maroc en matière de couverture, de coût et d’usage.",
+        shortScript: "Aujourd’hui, parler de Starlink au Maroc ne consiste pas seulement à parler de vitesse. La vraie question est de savoir qui pourrait en profiter et à quel prix. Dans les zones éloignées où la connexion reste limitée, une offre satellite peut représenter une solution concrète. Mais il faut aussi regarder le coût de l’équipement, l’abonnement mensuel et le cadre réglementaire. Si ces éléments deviennent accessibles, Starlink peut ouvrir une nouvelle option pour les foyers, les entrepreneurs et les créateurs hors des grands centres urbains.",
+        caption: "Starlink peut être une vraie opportunité pour certaines zones du Maroc, mais tout dépendra du coût final et de la mise en place locale.",
+        hashtags: "#Starlink #Maroc #InternetSatellite #TechMaroc #ActualiteTech #YouTubeShorts",
+        cta: "Abonne-toi pour suivre les prochaines mises à jour sur ce sujet.",
+        audience: "Personnes intéressées par la technologie et la connectivité au Maroc"
+      };
+    }
+
+    if (input.language === "Arabic") {
+      return {
+        title: topic,
+        meta: buildMeta(input.platform, input.language, input.style),
+        hook: "ستارلينك قد تغيّر شكل الإنترنت في المناطق البعيدة بالمغرب، لكن السعر والتنظيم هما العامل الحاسم.",
+        videoIdea: "فيديو قصير يشرح ما الذي قد تضيفه ستارلينك للمغرب من حيث التغطية والتكلفة وفرص الاستخدام.",
+        shortScript: "اليوم، الحديث عن ستارلينك في المغرب لا يتعلق فقط بسرعة الإنترنت، بل بمن يمكنه الاستفادة منها فعلًا. الميزة الكبرى هي إمكانية تحسين الاتصال في المناطق البعيدة التي تعاني من ضعف الشبكة الأرضية. لكن في المقابل، يبقى السؤال حول تكلفة الاشتراك والمعدات، إضافة إلى الجانب التنظيمي والترخيص. إذا دخلت الخدمة بشكل واضح وبسعر معقول، فقد تصبح خيارًا مهمًا للأسر، ورواد الأعمال، وصناع المحتوى خارج المدن الكبرى.",
+        caption: "ستارلينك قد تكون فرصة مهمة لتحسين الاتصال في بعض مناطق المغرب، لكن القرار الحقيقي سيعتمد على السعر والتنظيم.",
+        hashtags: "#ستارلينك #المغرب #الإنترنت_الفضائي #أخبار_التقنية #يوتيوب_شورتس #اتصال_رقمي",
+        cta: "احفظ هذا الفيديو إذا كنت تريد متابعة جديد ستارلينك في المغرب.",
+        audience: "المهتمون بالتقنية والاتصال الرقمي في المغرب"
+      };
+    }
+
+    return {
+      title: topic,
+      meta: buildMeta(input.platform, input.language, input.style),
+      hook: "Starlink could expand internet access in Morocco, but pricing and regulation will decide its real impact.",
+      videoIdea: "A short video explaining how Starlink could affect coverage, cost, and digital access in Morocco.",
+      shortScript: "Today, the real conversation around Starlink in Morocco is not just about faster internet. It is about who could benefit and whether the service becomes affordable enough to matter. In remote areas where traditional coverage is still weak, satellite internet could be a practical option. But the important questions are still the equipment cost, monthly pricing, and local regulation. If those pieces align, Starlink could become a meaningful choice for households, entrepreneurs, and creators outside major cities.",
+      caption: "Starlink could be a real connectivity upgrade for parts of Morocco, but the final impact depends on cost and rollout conditions.",
+      hashtags: "#Starlink #Morocco #SatelliteInternet #TechNews #DigitalAccess #YouTubeShorts",
+      cta: "Subscribe if you want more short tech explainers like this.",
+      audience: "Tech audiences and digital access watchers in Morocco"
+    };
+  }
+
+  if (preset === "student-money") {
+    if (input.language === "French") {
+      return {
+        title: topic,
+        meta: buildMeta(input.platform, input.language, input.style),
+        hook: "Un étudiant peut économiser chaque mois en corrigeant seulement trois habitudes simples.",
+        videoIdea: "Un Reel narratif qui montre comment de petits choix quotidiens peuvent aider les étudiants à garder plus d’argent.",
+        shortScript: "Quand on est étudiant, l’argent ne disparaît pas toujours dans une grosse dépense. Il part souvent dans les cafés, les livraisons et les abonnements oubliés. Ce qui change vraiment la situation, c’est de suivre ses dépenses pendant une semaine, de fixer un budget repas avant le début du mois et de supprimer ce qui n’est pas essentiel. Ces gestes paraissent petits, mais ils libèrent rapidement une vraie marge. Économiser quand on est étudiant, c’est souvent repérer les petites fuites avant qu’elles ne deviennent une habitude.",
+        caption: "Le budget étudiant se casse rarement sur une grosse dépense. Ce sont souvent les petites habitudes qui coûtent le plus à la fin du mois.",
+        hashtags: "#BudgetEtudiant #Economiser #VieEtudiante #Argent #HabitudesFinancieres #InstagramReels",
+        cta: "Enregistre ce Reel si tu veux plus d’idées simples pour mieux gérer ton budget.",
+        audience: "Étudiants et créateurs de contenu lifestyle étudiant"
+      };
+    }
+
+    if (input.language === "Arabic") {
+      return {
+        title: topic,
+        meta: buildMeta(input.platform, input.language, input.style),
+        hook: "الطالب يستطيع توفير مبلغ حقيقي كل شهر إذا أصلح ثلاث عادات مالية صغيرة.",
+        videoIdea: "فيديو قصير بأسلوب قصصي يوضح كيف تساعد تغييرات بسيطة الطلاب على الاحتفاظ بمال أكثر.",
+        shortScript: "عندما يكون الطالب تحت ضغط المصاريف، لا يضيع المال غالبًا في عملية شراء كبيرة واحدة، بل في قهوة يومية، وتوصيل متكرر، واشتراكات لا تُستخدم. الفرق يبدأ عندما تتابع مصروفك لأسبوع واحد، وتحدد ميزانية واضحة للأكل، وتلغي أي خدمة لا تحتاجها فعلًا. هذه خطوات بسيطة، لكنها تصنع فارقًا حقيقيًا مع نهاية الشهر. التوفير للطالب ليس حرمانًا دائمًا، بل وعيًا بالمصاريف الصغيرة التي تتكرر من دون أن ننتبه لها.",
+        caption: "معظم الميزانيات الطلابية لا تنهار بسبب مصروف كبير واحد، بل بسبب عادات صغيرة تتكرر كل يوم.",
+        hashtags: "#توفير_للطلبة #ميزانية_طالب #نصائح_مالية #حياة_الطالب #مصروف_شخصي #ريلز",
+        cta: "تابعني للمزيد من أفكار المحتوى القصير المفيدة للطلاب.",
+        audience: "الطلاب وصناع محتوى الحياة الجامعية"
+      };
+    }
+
+    return {
+      title: topic,
+      meta: buildMeta(input.platform, input.language, input.style),
+      hook: "A student can save real money every month by fixing just three spending habits.",
+      videoIdea: "A story-driven Reel about how small daily choices can help students keep more money without feeling restricted.",
+      shortScript: "When I was a student, the money never disappeared in one big purchase. It went on coffee, delivery, and subscriptions I barely used. What changed everything was tracking my spending for one week, setting a food budget before the month started, and cancelling anything that was not essential. None of those changes felt dramatic, but together they freed up real money. Saving as a student is usually less about earning more and more about noticing where small leaks happen every day.",
+      caption: "Most student budgets do not break because of one big expense. They break because of small habits that add up quietly.",
+      hashtags: "#StudentMoneyTips #BudgetingForStudents #SaveMoney #StudentLife #MoneyHabits #InstagramReels",
+      cta: "Follow for more short-form content ideas you can actually use.",
+      audience: "Students and student lifestyle creators"
+    };
+  }
+
+  return buildGeneralContent(input);
 }
 
 function extractJsonCandidate(rawText) {
@@ -276,40 +454,62 @@ function parseStrictJsonPayload(rawText) {
     throw new ApiError(502, "INVALID_GEMINI_JSON_RESPONSE", "Gemini returned invalid JSON.");
   }
 
-  const requiredKeys = ["hook", "videoIdea", "shortScript", "caption", "hashtags", "cta"];
-  for (const key of requiredKeys) {
-    if (!String(parsed[key] || "").trim()) {
-      throw new ApiError(502, "INVALID_GEMINI_JSON_RESPONSE", `Gemini JSON is missing ${key}.`);
-    }
-  }
-
   return {
-    hook: String(parsed.hook).trim(),
-    videoIdea: String(parsed.videoIdea).trim(),
-    shortScript: String(parsed.shortScript).trim(),
-    caption: String(parsed.caption).trim(),
-    hashtags: String(parsed.hashtags).trim(),
-    cta: String(parsed.cta).trim()
+    hook: String(parsed.hook || "").trim(),
+    videoIdea: String(parsed.videoIdea || "").trim(),
+    shortScript: String(parsed.shortScript || "").trim(),
+    caption: String(parsed.caption || "").trim(),
+    hashtags: String(parsed.hashtags || "").trim(),
+    cta: String(parsed.cta || "").trim(),
+    audience: String(parsed.audience || "").trim()
+  };
+}
+
+function mergeContentWithFallback(parsedContent, fallbackContent) {
+  return {
+    hook: isWeakField("hook", parsedContent.hook) ? fallbackContent.hook : parsedContent.hook,
+    videoIdea: isWeakField("videoIdea", parsedContent.videoIdea) ? fallbackContent.videoIdea : parsedContent.videoIdea,
+    shortScript: isWeakField("shortScript", parsedContent.shortScript) ? fallbackContent.shortScript : parsedContent.shortScript,
+    caption: isWeakField("caption", parsedContent.caption) ? fallbackContent.caption : parsedContent.caption,
+    hashtags: normalizeHashtagString(parsedContent.hashtags, fallbackContent.hashtags),
+    cta: isWeakField("cta", parsedContent.cta) ? fallbackContent.cta : parsedContent.cta,
+    audience: isWeakField("audience", parsedContent.audience) ? fallbackContent.audience : parsedContent.audience
   };
 }
 
 function buildGeminiPrompt(input) {
   return [
-    "Generate short-form video marketing content for Trend2Short AI.",
+    "You are generating final publish-ready short-form video content for Trend2Short AI.",
     `Trend Topic: ${input.trend}`,
     `Platform: ${input.platform}`,
     `Language: ${input.language}`,
     `Style: ${input.style}`,
     "Return JSON only with these keys exactly:",
-    "{\"hook\":\"\",\"videoIdea\":\"\",\"shortScript\":\"\",\"caption\":\"\",\"hashtags\":\"\",\"cta\":\"\"}",
-    "Requirements:",
-    "- Match the requested language exactly.",
-    "- Keep hook concise and strong.",
-    "- Keep videoIdea to one clear sentence.",
-    "- Keep shortScript compact and ready to narrate.",
-    "- Keep hashtags as a single string with space-separated hashtags.",
-    "- Do not include markdown, code fences, or explanations."
-  ].join("\n");
+    "{\"hook\":\"\",\"videoIdea\":\"\",\"shortScript\":\"\",\"caption\":\"\",\"hashtags\":\"\",\"cta\":\"\",\"audience\":\"\"}",
+    "Strict rules:",
+    "- Write the final content itself, not instructions about how to write it.",
+    "- Do not write phrases like Start with, Begin by, Then explain, Commence par, Puis, Termine, or instructional equivalents.",
+    "- Every field must be ready to copy and publish.",
+    "- The hook must be specific, direct, and tied to the trend.",
+    "- The videoIdea must be one concrete sentence, not a generic description.",
+    "- The shortScript must be a real script between 60 and 120 words, written as natural spoken language.",
+    "- The caption must feel natural for a short video post, not like an AI summary.",
+    "- The hashtags must contain 5 to 8 full hashtags, relevant to the topic and the selected platform.",
+    "- Avoid broken hashtags such as #aitoolsfor or overly generic hashtags only.",
+    "- The CTA must fit the selected platform and language.",
+    "- The audience field must be a short phrase describing who this content is for.",
+    "- If the topic is broad, choose one concrete angle and include specific examples.",
+    "- Do not use markdown, bullets, labels, code fences, or explanations outside the JSON.",
+    input.language === "French"
+      ? "- Write natural French with correct accents such as créateurs, idée, vidéo, éducatif, aujourd’hui, élèves, enseignants."
+      : "-",
+    input.language === "Arabic"
+      ? "- Write clear Modern Standard Arabic. Do not mix Arabic with English except for platform or tool names."
+      : "-",
+    input.language === "English"
+      ? "- Write natural English that sounds ready to narrate in a short video."
+      : "-"
+  ].filter((line) => line !== "-").join("\n");
 }
 
 function buildGeminiBody(input) {
@@ -317,7 +517,7 @@ function buildGeminiBody(input) {
     system_instruction: {
       parts: [
         {
-          text: "You are Trend2Short AI. Return valid JSON only. Do not wrap the JSON in markdown."
+          text: "You are Trend2Short AI. Produce valid JSON only. Every field must be publish-ready final copy, not writing instructions."
         }
       ]
     },
@@ -333,6 +533,9 @@ function buildGeminiBody(input) {
     ],
     generationConfig: {
       responseMimeType: "application/json",
+      temperature: 0.8,
+      topP: 0.95,
+      maxOutputTokens: 700,
       responseSchema: {
         type: "OBJECT",
         properties: {
@@ -341,9 +544,10 @@ function buildGeminiBody(input) {
           shortScript: { type: "STRING" },
           caption: { type: "STRING" },
           hashtags: { type: "STRING" },
-          cta: { type: "STRING" }
+          cta: { type: "STRING" },
+          audience: { type: "STRING" }
         },
-        required: ["hook", "videoIdea", "shortScript", "caption", "hashtags", "cta"]
+        required: ["hook", "videoIdea", "shortScript", "caption", "hashtags", "cta", "audience"]
       }
     }
   };
@@ -437,12 +641,14 @@ async function callGemini(input, apiKey, fetchImpl) {
   }
 
   const payload = await response.json();
+  const fallbackContent = createDemoContent(input);
   const parsed = parseStrictJsonPayload(extractGeminiText(payload));
+  const merged = mergeContentWithFallback(parsed, fallbackContent);
 
   return {
     title: input.trend,
     meta: buildMeta(input.platform, input.language, input.style),
-    ...parsed
+    ...merged
   };
 }
 
@@ -451,6 +657,7 @@ async function handler(req, res) {
     if (typeof res.setHeader === "function") {
       res.setHeader("Allow", "POST");
     }
+
     return sendJson(res, 405, {
       ok: false,
       code: "METHOD_NOT_ALLOWED",
@@ -509,5 +716,8 @@ module.exports.__internals = {
   parseStrictJsonPayload,
   validateInput,
   callGemini,
-  buildGeminiBody
+  buildGeminiBody,
+  mergeContentWithFallback,
+  buildFallbackHashtags,
+  hasInstructionalLanguage
 };
