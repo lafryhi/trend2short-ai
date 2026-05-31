@@ -1,4 +1,5 @@
 const GEMINI_MODEL = "gemini-2.5-flash";
+const CONTENT_FIELDS = ["hook", "videoIdea", "shortScript", "caption", "hashtags", "cta", "audience"];
 
 class ApiError extends Error {
   constructor(status, code, message) {
@@ -446,23 +447,66 @@ function extractJsonCandidate(rawText) {
   return trimmed;
 }
 
+function normalizeJsonCandidate(jsonText) {
+  return String(jsonText || "")
+    .replace(/^\uFEFF/, "")
+    .replace(/[“”]/g, "\"")
+    .replace(/[‘’]/g, "'")
+    .replace(/([{,]\s*)([A-Za-z][A-Za-z0-9_]*)(\s*:)/g, "$1\"$2\"$3")
+    .replace(/,\s*([}\]])/g, "$1")
+    .trim();
+}
+
+function coerceParsedContent(parsed) {
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return null;
+  }
+
+  const candidate = {};
+  for (const field of CONTENT_FIELDS) {
+    candidate[field] = String(parsed[field] || "").trim();
+  }
+
+  return candidate;
+}
+
 function parseStrictJsonPayload(rawText) {
   const jsonText = extractJsonCandidate(rawText);
-  const parsed = safeJsonParse(jsonText, null);
+  const parsed =
+    safeJsonParse(jsonText, null) ||
+    safeJsonParse(normalizeJsonCandidate(jsonText), null);
 
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+  const coerced = coerceParsedContent(parsed);
+  if (!coerced) {
     throw new ApiError(502, "INVALID_GEMINI_JSON_RESPONSE", "Gemini returned invalid JSON.");
   }
 
-  return {
-    hook: String(parsed.hook || "").trim(),
-    videoIdea: String(parsed.videoIdea || "").trim(),
-    shortScript: String(parsed.shortScript || "").trim(),
-    caption: String(parsed.caption || "").trim(),
-    hashtags: String(parsed.hashtags || "").trim(),
-    cta: String(parsed.cta || "").trim(),
-    audience: String(parsed.audience || "").trim()
-  };
+  return coerced;
+}
+
+function extractLabeledField(text, field) {
+  const pattern = new RegExp(
+    `${field}\\s*[:=-]\\s*([\\s\\S]*?)(?=\\n(?:${CONTENT_FIELDS.join("|")})\\s*[:=-]|$)`,
+    "i"
+  );
+  const match = String(text || "").match(pattern);
+  return match ? match[1].trim().replace(/^["']|["']$/g, "") : "";
+}
+
+function parseLabeledContent(rawText) {
+  const text = String(rawText || "").trim();
+  if (!text) {
+    return null;
+  }
+
+  const candidate = {};
+  let hasValue = false;
+  for (const field of CONTENT_FIELDS) {
+    candidate[field] = extractLabeledField(text, field);
+    hasValue = hasValue || Boolean(candidate[field]);
+  }
+
+  return hasValue ? candidate : null;
 }
 
 function mergeContentWithFallback(parsedContent, fallbackContent) {
@@ -493,12 +537,15 @@ function buildGeminiPrompt(input) {
     "- The hook must be specific, direct, and tied to the trend.",
     "- The videoIdea must be one concrete sentence, not a generic description.",
     "- The shortScript must be a real script between 60 and 120 words, written as natural spoken language.",
+    "- The shortScript must read like the exact words someone would say in the video.",
+    "- Never describe a writing process, content plan, or sequence of steps.",
     "- The caption must feel natural for a short video post, not like an AI summary.",
     "- The hashtags must contain 5 to 8 full hashtags, relevant to the topic and the selected platform.",
     "- Avoid broken hashtags such as #aitoolsfor or overly generic hashtags only.",
     "- The CTA must fit the selected platform and language.",
     "- The audience field must be a short phrase describing who this content is for.",
     "- If the topic is broad, choose one concrete angle and include specific examples.",
+    "- If the topic has a known audience, place, tool, or use case, mention it directly instead of staying abstract.",
     "- Do not use markdown, bullets, labels, code fences, or explanations outside the JSON.",
     input.language === "French"
       ? "- Write natural French with correct accents such as créateurs, idée, vidéo, éducatif, aujourd’hui, élèves, enseignants."
@@ -517,7 +564,7 @@ function buildGeminiBody(input) {
     system_instruction: {
       parts: [
         {
-          text: "You are Trend2Short AI. Produce valid JSON only. Every field must be publish-ready final copy, not writing instructions."
+          text: "You are Trend2Short AI. Produce valid JSON only. Every field must be publish-ready final copy, not writing instructions or meta commentary."
         }
       ]
     },
@@ -533,21 +580,21 @@ function buildGeminiBody(input) {
     ],
     generationConfig: {
       responseMimeType: "application/json",
-      temperature: 0.8,
-      topP: 0.95,
+      temperature: 0.45,
+      topP: 0.9,
       maxOutputTokens: 700,
-      responseSchema: {
-        type: "OBJECT",
+      responseJsonSchema: {
+        type: "object",
         properties: {
-          hook: { type: "STRING" },
-          videoIdea: { type: "STRING" },
-          shortScript: { type: "STRING" },
-          caption: { type: "STRING" },
-          hashtags: { type: "STRING" },
-          cta: { type: "STRING" },
-          audience: { type: "STRING" }
+          hook: { type: "string", description: "A direct hook for the short video." },
+          videoIdea: { type: "string", description: "One concrete sentence describing the video concept." },
+          shortScript: { type: "string", description: "A natural 60 to 120 word script ready to read in the video." },
+          caption: { type: "string", description: "A natural social caption for the post." },
+          hashtags: { type: "string", description: "Five to eight topic-relevant hashtags separated by spaces." },
+          cta: { type: "string", description: "A short call to action that fits the platform." },
+          audience: { type: "string", description: "Who this content is for." }
         },
-        required: ["hook", "videoIdea", "shortScript", "caption", "hashtags", "cta", "audience"]
+        required: CONTENT_FIELDS
       }
     }
   };
@@ -560,11 +607,20 @@ async function parseGeminiHttpError(response) {
   return apiMessage || `Gemini request failed with status ${response.status}.`;
 }
 
-function extractGeminiText(payload) {
-  const text = payload?.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("").trim();
+function extractCandidateTexts(payload) {
+  const candidates = Array.isArray(payload?.candidates) ? payload.candidates : [];
+  const texts = [];
 
-  if (text) {
-    return text;
+  for (const candidate of candidates) {
+    const parts = Array.isArray(candidate?.content?.parts) ? candidate.content.parts : [];
+    const combined = parts
+      .map((part) => (typeof part?.text === "string" ? part.text : ""))
+      .join("")
+      .trim();
+
+    if (combined) {
+      texts.push(combined);
+    }
   }
 
   const blockReason = payload?.promptFeedback?.blockReason;
@@ -572,7 +628,31 @@ function extractGeminiText(payload) {
     throw new ApiError(502, "GEMINI_API_ERROR", `Gemini blocked the request: ${blockReason}.`);
   }
 
+  if (texts.length > 0) {
+    return texts;
+  }
+
   throw new ApiError(502, "INVALID_GEMINI_JSON_RESPONSE", "Gemini returned no usable text.");
+}
+
+function parseGeminiPayload(payload) {
+  const candidateTexts = extractCandidateTexts(payload);
+  let lastError = null;
+
+  for (const text of candidateTexts) {
+    try {
+      return parseStrictJsonPayload(text);
+    } catch (error) {
+      lastError = error;
+      const labeled = parseLabeledContent(text);
+      const coerced = coerceParsedContent(labeled);
+      if (coerced) {
+        return coerced;
+      }
+    }
+  }
+
+  throw lastError || new ApiError(502, "INVALID_GEMINI_JSON_RESPONSE", "Gemini returned invalid JSON.");
 }
 
 function validateInput(input) {
@@ -642,8 +722,17 @@ async function callGemini(input, apiKey, fetchImpl) {
 
   const payload = await response.json();
   const fallbackContent = createDemoContent(input);
-  const parsed = parseStrictJsonPayload(extractGeminiText(payload));
-  const merged = mergeContentWithFallback(parsed, fallbackContent);
+  let parsed = null;
+
+  try {
+    parsed = parseGeminiPayload(payload);
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.code !== "INVALID_GEMINI_JSON_RESPONSE") {
+      throw error;
+    }
+  }
+
+  const merged = parsed ? mergeContentWithFallback(parsed, fallbackContent) : fallbackContent;
 
   return {
     title: input.trend,
@@ -714,6 +803,7 @@ module.exports.__internals = {
   ApiError,
   createDemoContent,
   parseStrictJsonPayload,
+  parseGeminiPayload,
   validateInput,
   callGemini,
   buildGeminiBody,
